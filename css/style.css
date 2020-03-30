@@ -1,0 +1,291 @@
+html,
+body {
+  overflow: hidden;
+}
+
+body {
+  margin-top: 32px;
+  font-family: "Press Start 2P", cursive;
+  background: whitesmoke;
+}
+
+.container {
+  max-width: 960px;
+  width: 95%;
+  margin: 0 auto;
+  background: #fff;
+}
+
+.no-background {
+  background: none;
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.vs {
+  align-self: center;
+  background: #ffdc73;
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  transform: rotate(-8deg);
+}
+
+.players {
+  display: grid;
+  grid-template-columns: 1fr max-content 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.player__media {
+  width: 144px;
+  height: 144px;
+  position: relative;
+}
+
+.player__win-counter {
+  padding: 24px;
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  background-color: #fff;
+  border-radius: 50%;
+  height: 24px;
+  width: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 4px 8px 16px rgba(0, 0, 0, 0.37);
+}
+
+.player__avatar {
+  width: 144px;
+  height: 144px;
+  display: block;
+  margin: 0 auto;
+}
+
+.player__name {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.player__health-bar {
+  height: 16px;
+  width: 240px;
+  margin: 0 auto;
+  transition: all 0.4s ease-in-out;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.actions__btn {
+  margin: 0 16px;
+  text-transform: uppercase;
+}
+
+.actions__btn:first-of-type {
+  margin-left: 0;
+}
+
+.actions__btn:last-of-type {
+  margin-right: 0;
+}
+
+.logs {
+  padding: 8px;
+  position: relative;
+  width: 100%;
+  height: 144px;
+  overflow: auto;
+}
+
+.logs p:nth-child(odd) {
+  background: rgba(255, 0, 0, 0.08);
+}
+
+.logs p:nth-child(even) {
+  background: rgba(0, 0, 255, 0.08);
+}
+
+.mb-2 {
+  margin-bottom: 32px;
+}
+
+.give-up-dialog {
+  position: fixed;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+
+.give-up-dialog-menu {
+  padding-left: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.give-up-dialog-menu button:first-child {
+  margin-right: 16px;
+}
+
+.pl-0 {
+  padding-left: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.give-up-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.37);
+}
+
+.ml-1 {
+  margin-left: 16px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.custom-1-enter-active,
+.custom-1-leave-active {
+  transition: all 0.4s ease;
+}
+
+.custom-1-enter,
+.custom-1-leave-to {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.custom-2-enter-active,
+.custom-2-leave-active {
+  transition: all 0.4s ease;
+}
+
+.custom-2-enter,
+.custom-2-leave-to {
+  transform: scale(0);
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    overflow: initial;
+  }
+
+  .vs {
+    justify-self: center;
+  }
+
+  .players {
+    grid-template-columns: 1fr;
+  }
+
+  .player__media,
+  .player__avatar {
+    width: 92px;
+    height: 92px;
+  }
+
+  .actions {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .actions__btn {
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .actions__btn:first-of-type {
+    margin-top: 0;
+  }
+
+  .actions__btn:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .logs {
+    height: 240px;
+  }
+
+  .start-game-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    margin-top: 8px;
+  }
+
+  .player__health-bar {
+    display: none;
+  }
+
+  .player__health-bar--xs {
+    display: block;
+  }
+
+  .give-up-dialog {
+    width: 95%;
+  }
+
+  .give-up-dialog-menu {
+    flex-direction: column-reverse !important;
+  }
+
+  .give-up-dialog-menu button:first-child {
+    margin-right: 0;
+    margin-top: 16px;
+  }
+}
+
+@media (min-height: 900px) {
+  .logs {
+    height: 240px;
+  }
+}
