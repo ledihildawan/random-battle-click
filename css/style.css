@@ -290,6 +290,8 @@ body {
   }
 }
 
+/* === NEW ANIMATIONS === */
+
 /* Shake animation for taking damage */
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
@@ -324,14 +326,12 @@ body {
   transition: filter 0.2s;
 }
 
-/* Critical Hit Text style in logs */
 .log-crit {
   color: #e76e55;
   font-weight: bold;
-  text-shadow: 1px 1px 0px #000;
 }
 
 .log-miss {
-  color: #92cc41; /* NES.css green */
+  color: #92cc41;
   font-style: italic;
 }

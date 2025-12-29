@@ -43,9 +43,6 @@ const app = new Vue({
         },
       },
       logs: [],
-      els: {
-        logs: document.querySelector('.logs'),
-      },
     };
   },
 
@@ -124,12 +121,14 @@ const app = new Vue({
     },
 
     determineTheWinner() {
+      // Double KO
       if (this.health.player1 <= 0 && this.health.player2 <= 0) {
         this.createLog('DOUBLE KO! NO ONE WINS THIS BATTLE ⚔️');
         this.gameOver();
         return true;
       }
 
+      // Player 2 Wins
       if (this.health.player1 <= 0) {
         const name = this.selectedPlayer.player2.name.toUpperCase();
         this.selectedPlayer.player2.name = `👑 ${name}`;
@@ -140,6 +139,7 @@ const app = new Vue({
         return true;
       }
 
+      // Player 1 Wins
       if (this.health.player2 <= 0) {
         const name = this.selectedPlayer.player1.name.toUpperCase();
         this.selectedPlayer.player1.name = `👑 ${name}`;
@@ -153,94 +153,113 @@ const app = new Vue({
       return false;
     },
 
-    triggerVisualEffect(targetPlayer) {
-      const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
-      const el = document.querySelector(selector);
-      if (el) {
-        el.classList.remove('shake'); // reset
-        void el.offsetWidth; // trigger reflow
-        el.classList.add('shake');
-        el.classList.add('hit-flash');
-        setTimeout(() => el.classList.remove('hit-flash'), 200);
-      }
-    },
-
-    calcDemage(min, max) {
+    calcDamage(min = 2, max = 10) {
       return Math.max(Math.floor(Math.random() * max) + 1, min);
     },
 
     createLog(message) {
-      const logs = document.querySelector('.logs');
-      this.logs.push(message); // Pushing direct message or object logic handled in HTML
+      // Using querySelector here to ensure we find it even if DOM updated
+      const logsContainer = document.querySelector('.logs');
 
-      // Auto scroll
-      setTimeout(() => {
-        logs.scrollTo({ left: 0, top: logs.scrollHeight, behavior: 'smooth' });
-      }, 0);
+      this.logs.push(message);
+
+      if (logsContainer) {
+        setTimeout(() => {
+          logsContainer.scrollTo({
+            left: 0,
+            top: logsContainer.scrollHeight,
+            behavior: 'smooth',
+          });
+        }, 50);
+      }
     },
 
-    // Standard Attack: Reliable, Low Damage, small Crit chance
+    // Triggers the CSS shake animation
+    triggerVisualEffect(targetPlayer) {
+      const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.remove('shake');
+        el.classList.remove('hit-flash');
+
+        // Force Reflow to restart animation
+        void el.offsetWidth;
+
+        el.classList.add('shake');
+        el.classList.add('hit-flash');
+
+        // Remove flash filter quickly
+        setTimeout(() => el.classList.remove('hit-flash'), 200);
+      }
+    },
+
     attack() {
-      const player1 = this.selectedPlayer.player1.name;
-      const player2 = this.selectedPlayer.player2.name;
+      const p1Name = this.selectedPlayer.player1.name;
+      const p2Name = this.selectedPlayer.player2.name;
 
-      // Calculate Base Damage
-      let dmg1 = this.calcDemage(3, 10);
-      let dmg2 = this.calcDemage(3, 10);
+      // Calculate base damage
+      let damageTakenByP1 = this.calcDamage(3, 10); // Damage P2 deals to P1
+      let damageTakenByP2 = this.calcDamage(3, 10); // Damage P1 deals to P2
 
-      // 15% Chance for Critical Hit (2x Damage)
-      const crit1 = Math.random() < 0.15;
-      const crit2 = Math.random() < 0.15;
+      // Critical Hit Chance (15%)
+      const p1Crit = Math.random() < 0.15; // P1 lands a crit on P2
+      const p2Crit = Math.random() < 0.15; // P2 lands a crit on P1
 
-      if (crit1) dmg1 *= 2;
-      if (crit2) dmg2 *= 2;
+      if (p1Crit) damageTakenByP2 *= 2;
+      if (p2Crit) damageTakenByP1 *= 2;
 
       // Apply Damage
-      this.health.player1 -= dmg1;
-      this.health.player2 -= dmg2;
+      this.health.player1 -= damageTakenByP1;
+      this.health.player2 -= damageTakenByP2;
 
-      // Visuals
+      // Trigger Effects
       this.triggerVisualEffect('player1');
       this.triggerVisualEffect('player2');
 
-      // Logs
-      if (crit2) this.createLog(`💥 CRITICAL! ${player1} hits ${player2} for ${dmg2}!!`);
-      else this.createLog(`${player1} hits ${player2} for ${dmg2}`);
+      // Generate Logs
+      if (p1Crit) {
+        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p1Name} hits ${p2Name} for ${damageTakenByP2}!!</span>`);
+      } else {
+        this.createLog(`${p1Name} hits ${p2Name} for ${damageTakenByP2}`);
+      }
 
-      if (crit1) this.createLog(`💥 CRITICAL! ${player2} hits ${player1} for ${dmg1}!!`);
-      else this.createLog(`${player2} hits ${player1} for ${dmg1}`);
+      if (p2Crit) {
+        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p2Name} hits ${p1Name} for ${damageTakenByP1}!!</span>`);
+      } else {
+        this.createLog(`${p2Name} hits ${p1Name} for ${damageTakenByP1}`);
+      }
 
       if (this.determineTheWinner()) return;
       this.determineTheWinner();
     },
 
-    // Special Attack: High Damage, but 20% Chance to MISS
     specialAttack() {
-      const player1 = this.selectedPlayer.player1.name;
-      const player2 = this.selectedPlayer.player2.name;
+      const p1Name = this.selectedPlayer.player1.name;
+      const p2Name = this.selectedPlayer.player2.name;
 
-      let dmg1 = this.calcDemage(15, 30);
-      let dmg2 = this.calcDemage(15, 30);
+      const damageTakenByP1 = this.calcDamage(15, 30);
+      const damageTakenByP2 = this.calcDamage(15, 30);
 
-      // 20% Chance to Miss completely
-      const miss1 = Math.random() < 0.2;
-      const miss2 = Math.random() < 0.2;
+      // 20% Chance to Miss
+      const p1Miss = Math.random() < 0.2;
+      const p2Miss = Math.random() < 0.2;
 
-      // Apply Damage logic
-      if (!miss1) {
-        this.health.player2 -= dmg2;
+      // P1 Attacks P2
+      if (!p1Miss) {
+        this.health.player2 -= damageTakenByP2;
         this.triggerVisualEffect('player2');
-        this.createLog(`✨ ${player1} BLASTS ${player2} for ${dmg2}`);
+        this.createLog(`✨ ${p1Name} BLASTS ${p2Name} for ${damageTakenByP2}`);
       } else {
-        this.createLog(`💨 ${player1} used Special Attack but MISSED!`);
+        this.createLog(`<span class="log-miss">💨 ${p1Name} used Special Attack but MISSED!</span>`);
       }
 
-      if (!miss2) {
-        this.health.player1 -= dmg1;
+      // P2 Attacks P1
+      if (!p2Miss) {
+        this.health.player1 -= damageTakenByP1;
         this.triggerVisualEffect('player1');
-        this.createLog(`✨ ${player2} BLASTS ${player1} for ${dmg1}`);
+        this.createLog(`✨ ${p2Name} BLASTS ${p1Name} for ${damageTakenByP1}`);
       } else {
-        this.createLog(`💨 ${player2} used Special Attack but MISSED!`);
+        this.createLog(`<span class="log-miss">💨 ${p2Name} used Special Attack but MISSED!</span>`);
       }
 
       if (this.determineTheWinner()) return;
@@ -248,27 +267,28 @@ const app = new Vue({
     },
 
     heal() {
-      const isHealthBarFull = this.health.player1 < 90 && this.health.player2 < 90;
+      // Check limits
+      if (this.tracker.heal >= this.limit.heal) return;
 
-      if (this.tracker.heal < this.limit.heal && isHealthBarFull) {
-        this.tracker.heal++;
+      this.tracker.heal++;
 
-        const player1 = this.selectedPlayer.player1.name;
-        const player2 = this.selectedPlayer.player2.name;
+      const p1Name = this.selectedPlayer.player1.name;
+      const p2Name = this.selectedPlayer.player2.name;
 
-        // Random heal amount between 10 and 25
-        const heal1 = Math.floor(Math.random() * 15) + 10;
-        const heal2 = Math.floor(Math.random() * 15) + 10;
+      // Dynamic healing (10 to 25)
+      const healP1 = Math.floor(Math.random() * 15) + 10;
+      const healP2 = Math.floor(Math.random() * 15) + 10;
 
-        if (this.health.player1 >= 100) this.health.player1 = 100;
-        else this.health.player1 += heal1;
+      // Apply Heal P1
+      this.health.player1 += healP1;
+      if (this.health.player1 > 100) this.health.player1 = 100;
 
-        if (this.health.player2 >= 100) this.health.player2 = 100;
-        else this.health.player2 += heal2;
+      // Apply Heal P2
+      this.health.player2 += healP2;
+      if (this.health.player2 > 100) this.health.player2 = 100;
 
-        this.createLog(`💚 ${player1} heals himself for ${heal1}`);
-        this.createLog(`💚 ${player2} heals himself for ${heal2}`);
-      }
+      this.createLog(`💚 ${p1Name} heals for ${healP1}`);
+      this.createLog(`💚 ${p2Name} heals for ${healP2}`);
     },
 
     showDialogGiveUp() {
@@ -276,34 +296,36 @@ const app = new Vue({
       giveUpDialogBackdrop.className = 'give-up-dialog-backdrop';
       document.getElementById('give-up-dialog').setAttribute('open', 'true');
       document.body.appendChild(giveUpDialogBackdrop);
+
       giveUpDialogBackdrop.addEventListener('click', () => {
         this.hideDialogGiveUp();
       });
     },
 
     hideDialogGiveUp() {
-      document.getElementById('give-up-dialog').removeAttribute('open');
-      document.querySelector('.give-up-dialog-backdrop').remove();
+      const dialog = document.getElementById('give-up-dialog');
+      const backdrop = document.querySelector('.give-up-dialog-backdrop');
+
+      if (dialog) dialog.removeAttribute('open');
+      if (backdrop) backdrop.remove();
     },
 
     giveUp() {
       const winStats = this.stats.win;
-      const player1 = this.selectedPlayer.player1.name;
-      const player2 = this.selectedPlayer.player2.name;
+      const p1Name = this.selectedPlayer.player1.name;
+      const p2Name = this.selectedPlayer.player2.name;
       const player1Win = winStats.player1 > winStats.player2;
       const player2Win = winStats.player2 > winStats.player1;
-      const tie = winStats.player1 > 0 && winStats.player2 > 0 && winStats.player1 === winStats.player2;
-      const equalWinStatsAndNotFullHealthBar =
-        winStats.player1 === winStats.player2 && this.health.player1 < 100 && this.health.player2 < 100;
+      const tie = winStats.player1 === winStats.player2;
 
       if (player1Win) {
-        this.createLog(`${player1} WON! ${player2} RAN AWAY!`);
+        this.createLog(`${p1Name} HAS WON! ${p2Name} SURRENDERED.`);
       } else if (player2Win) {
-        this.createLog(`${player2} WON! ${player1} RAN AWAY!`);
+        this.createLog(`${p2Name} HAS WON! ${p1Name} SURRENDERED.`);
       } else if (tie) {
-        this.createLog(`THE BATTLE ⚔️ ENDED IN A TIE.`);
+        this.createLog(`THE BATTLE ⚔️ ENDED IN A DRAW.`);
       } else {
-        this.createLog(`🏳️ BATTLE CANCELLED. PEACE WAS CHOSEN.`);
+        this.createLog(`PEACE WAS CHOSEN.`);
       }
 
       this.status.giveUp = true;
