@@ -1,4 +1,4 @@
-Vue.config.devtools = true
+Vue.config.devtools = true;
 
 const app = new Vue({
   el: '#app',
@@ -40,233 +40,278 @@ const app = new Vue({
         win: {
           player1: 0,
           player2: 0,
-        }
+        },
       },
       logs: [],
       els: {
-        logs: document.querySelector('.logs')
-      }
-    }
+        logs: document.querySelector('.logs'),
+      },
+    };
   },
 
-  created () {
-    this.selectRandPlayers()
+  created() {
+    this.selectRandPlayers();
   },
 
   methods: {
-    getRandPlayers () {
-      return this.players[Math.floor(Math.random() * this.players.length)]
+    getRandPlayers() {
+      return this.players[Math.floor(Math.random() * this.players.length)];
     },
 
-    selectRandPlayers () {
+    selectRandPlayers() {
       const rand = setInterval(() => {
-        if (this.status.play) clearInterval(rand)
+        if (this.status.play) clearInterval(rand);
 
-        this.selectedPlayer.player1 = this.getRandPlayers()
-        this.selectedPlayer.player2 = this.getRandPlayers()
+        this.selectedPlayer.player1 = this.getRandPlayers();
+        this.selectedPlayer.player2 = this.getRandPlayers();
 
         if (this.selectedPlayer.player1 === this.selectedPlayer.player2) {
-          this.selectedPlayer.player2 = this.getRandPlayers()
+          this.selectedPlayer.player2 = this.getRandPlayers();
         }
-      }, 1000)
+      }, 1000);
     },
 
-    resetCrown (players) {
+    resetCrown(players) {
       players.forEach((player) => {
         if (this.selectedPlayer[player].name.includes('👑')) {
-          this.selectedPlayer[player].name = this.selectedPlayer[player].name.split('👑').filter(n => n).join(' ').trim()
+          this.selectedPlayer[player].name = this.selectedPlayer[player].name
+            .split('👑')
+            .filter((n) => n)
+            .join(' ')
+            .trim();
         }
-      })
+      });
     },
 
     startNewGame() {
-      this.resetCrown(['player1', 'player2'])
-      this.status.play = true
-      this.status.winner = false
-      this.status.giveUp = false
-      this.health.player1 = 100
-      this.health.player2 = 100
-      this.tracker.heal = 0
-      this.logs = []
-      this.stats.win.player1 = 0
-      this.stats.win.player2 = 0
-    },
-
-    reBattle () {
-      this.resetCrown(['player1', 'player2'])
-      this.status.play = true
-      this.status.winner = false
-      this.status.giveUp = false
-      this.health.player1 = 100
-      this.health.player2 = 100
-      this.tracker.heal = 0
-      this.logs = []
-    },
-
-    exitGame () {
-      this.resetCrown(['player1', 'player2'])
-      this.selectRandPlayers()
+      this.resetCrown(['player1', 'player2']);
+      this.status.play = true;
+      this.status.winner = false;
+      this.status.giveUp = false;
+      this.health.player1 = 100;
+      this.health.player2 = 100;
+      this.tracker.heal = 0;
+      this.logs = [];
       this.stats.win.player1 = 0;
       this.stats.win.player2 = 0;
-      this.status.play = false
-      this.status.winner = false
-      this.status.giveUp = false
     },
 
-    gameOver () {
-      this.status.play = false
-      this.status.winner = true
-      this.status.giveUp = false
+    reBattle() {
+      this.resetCrown(['player1', 'player2']);
+      this.status.play = true;
+      this.status.winner = false;
+      this.status.giveUp = false;
+      this.health.player1 = 100;
+      this.health.player2 = 100;
+      this.tracker.heal = 0;
+      this.logs = [];
+    },
+
+    exitGame() {
+      this.resetCrown(['player1', 'player2']);
+      this.selectRandPlayers();
+      this.stats.win.player1 = 0;
+      this.stats.win.player2 = 0;
+      this.status.play = false;
+      this.status.winner = false;
+      this.status.giveUp = false;
+    },
+
+    gameOver() {
+      this.status.play = false;
+      this.status.winner = true;
+      this.status.giveUp = false;
     },
 
     determineTheWinner() {
       if (this.health.player1 <= 0 && this.health.player2 <= 0) {
-        this.createLog('NO ONE WIN THIS BATTLE ⚔️')
-        this.gameOver()
-        return true
+        this.createLog('DOUBLE KO! NO ONE WINS THIS BATTLE ⚔️');
+        this.gameOver();
+        return true;
       }
 
       if (this.health.player1 <= 0) {
-        const name = this.selectedPlayer.player2.name.toUpperCase()
-        this.selectedPlayer.player2.name = `👑 ${name}`
-        this.stats.win.player2 += 1
+        const name = this.selectedPlayer.player2.name.toUpperCase();
+        this.selectedPlayer.player2.name = `👑 ${name}`;
+        this.stats.win.player2 += 1;
         this.health.player1 = 0;
-        this.createLog(`${name} HAS WON THE BATTLE ⚔️`)
-        this.gameOver()
-        return true
+        this.createLog(`${name} HAS WON THE BATTLE ⚔️`);
+        this.gameOver();
+        return true;
       }
 
       if (this.health.player2 <= 0) {
-        const name = this.selectedPlayer.player1.name.toUpperCase()
-        this.selectedPlayer.player1.name = `👑 ${name}`
-        this.stats.win.player1 += 1
+        const name = this.selectedPlayer.player1.name.toUpperCase();
+        this.selectedPlayer.player1.name = `👑 ${name}`;
+        this.stats.win.player1 += 1;
         this.health.player2 = 0;
-        this.createLog(`${name} HAS WON THE BATTLE ⚔️`)
-        this.gameOver()
-        return true
+        this.createLog(`${name} HAS WON THE BATTLE ⚔️`);
+        this.gameOver();
+        return true;
       }
 
-      return false
+      return false;
     },
 
-    calcDemage (min = 2, max = 10) {
-      return Math.max(Math.floor(Math.random() * max) + 1, min)
+    triggerVisualEffect(targetPlayer) {
+      const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.remove('shake'); // reset
+        void el.offsetWidth; // trigger reflow
+        el.classList.add('shake');
+        el.classList.add('hit-flash');
+        setTimeout(() => el.classList.remove('hit-flash'), 200);
+      }
     },
 
-    createLog (message) {
-      const logs = document.querySelector('.logs')
+    calcDemage(min, max) {
+      return Math.max(Math.floor(Math.random() * max) + 1, min);
+    },
 
+    createLog(message) {
+      const logs = document.querySelector('.logs');
+      this.logs.push(message); // Pushing direct message or object logic handled in HTML
+
+      // Auto scroll
       setTimeout(() => {
-        logs.scrollTo({
-          left: 0,
-          top: logs.scrollHeight,
-          behavior: 'smooth',
-        })
-      }, 0)
-
-      this.logs.push(`${message}\n`)
+        logs.scrollTo({ left: 0, top: logs.scrollHeight, behavior: 'smooth' });
+      }, 0);
     },
 
+    // Standard Attack: Reliable, Low Damage, small Crit chance
     attack() {
-      const player1 = this.selectedPlayer.player1.name
-      const player2 = this.selectedPlayer.player2.name
-      const demangePlayer1 = this.calcDemage()
-      const demagePlayer2 = this.calcDemage()
+      const player1 = this.selectedPlayer.player1.name;
+      const player2 = this.selectedPlayer.player2.name;
 
-      this.health.player1 -= demangePlayer1
-      this.health.player2 -= demagePlayer2
+      // Calculate Base Damage
+      let dmg1 = this.calcDemage(3, 10);
+      let dmg2 = this.calcDemage(3, 10);
 
-      this.createLog(`${player1} hits ${player2} for ${demagePlayer2}`)
-      this.createLog(`${player2} hits ${player1} for ${demangePlayer1}`)
+      // 15% Chance for Critical Hit (2x Damage)
+      const crit1 = Math.random() < 0.15;
+      const crit2 = Math.random() < 0.15;
 
-      if (this.determineTheWinner()) return
+      if (crit1) dmg1 *= 2;
+      if (crit2) dmg2 *= 2;
 
-      this.determineTheWinner()
+      // Apply Damage
+      this.health.player1 -= dmg1;
+      this.health.player2 -= dmg2;
+
+      // Visuals
+      this.triggerVisualEffect('player1');
+      this.triggerVisualEffect('player2');
+
+      // Logs
+      if (crit2) this.createLog(`💥 CRITICAL! ${player1} hits ${player2} for ${dmg2}!!`);
+      else this.createLog(`${player1} hits ${player2} for ${dmg2}`);
+
+      if (crit1) this.createLog(`💥 CRITICAL! ${player2} hits ${player1} for ${dmg1}!!`);
+      else this.createLog(`${player2} hits ${player1} for ${dmg1}`);
+
+      if (this.determineTheWinner()) return;
+      this.determineTheWinner();
     },
 
+    // Special Attack: High Damage, but 20% Chance to MISS
     specialAttack() {
-      const player1 = this.selectedPlayer.player1.name
-      const player2 = this.selectedPlayer.player2.name
-      const demangePlayer1 = this.calcDemage(10, 25)
-      const demagePlayer2 = this.calcDemage(10, 25)
+      const player1 = this.selectedPlayer.player1.name;
+      const player2 = this.selectedPlayer.player2.name;
 
-      this.health.player1 -= demangePlayer1
-      this.health.player2 -= demagePlayer2
+      let dmg1 = this.calcDemage(15, 30);
+      let dmg2 = this.calcDemage(15, 30);
 
-      this.createLog(`${player1} hits ${player2} for ${demagePlayer2}`)
-      this.createLog(`${player2} hits ${player1} for ${demangePlayer1}`)
+      // 20% Chance to Miss completely
+      const miss1 = Math.random() < 0.2;
+      const miss2 = Math.random() < 0.2;
 
-      if (this.determineTheWinner()) return
+      // Apply Damage logic
+      if (!miss1) {
+        this.health.player2 -= dmg2;
+        this.triggerVisualEffect('player2');
+        this.createLog(`✨ ${player1} BLASTS ${player2} for ${dmg2}`);
+      } else {
+        this.createLog(`💨 ${player1} used Special Attack but MISSED!`);
+      }
 
-      this.determineTheWinner()
+      if (!miss2) {
+        this.health.player1 -= dmg1;
+        this.triggerVisualEffect('player1');
+        this.createLog(`✨ ${player2} BLASTS ${player1} for ${dmg1}`);
+      } else {
+        this.createLog(`💨 ${player2} used Special Attack but MISSED!`);
+      }
+
+      if (this.determineTheWinner()) return;
+      this.determineTheWinner();
     },
 
     heal() {
-      const isHealthBarFull = this.health.player1 < 90 && this.health.player2 < 90
+      const isHealthBarFull = this.health.player1 < 90 && this.health.player2 < 90;
 
       if (this.tracker.heal < this.limit.heal && isHealthBarFull) {
-        this.tracker.heal++
+        this.tracker.heal++;
 
-        const player1 = this.selectedPlayer.player1.name
-        const player2 = this.selectedPlayer.player2.name
+        const player1 = this.selectedPlayer.player1.name;
+        const player2 = this.selectedPlayer.player2.name;
 
-        if (this.health.player1 >= 100) this.health.player1 = 100
-        if (this.health.player2 >= 100) this.health.player2 = 100
+        // Random heal amount between 10 and 25
+        const heal1 = Math.floor(Math.random() * 15) + 10;
+        const heal2 = Math.floor(Math.random() * 15) + 10;
 
-        this.health.player1 += 10
-        this.health.player2 += 10
+        if (this.health.player1 >= 100) this.health.player1 = 100;
+        else this.health.player1 += heal1;
 
-        this.createLog(`${player1} heals himself for ${10}`)
-        this.createLog(`${player2} heals himself for ${10}`)
+        if (this.health.player2 >= 100) this.health.player2 = 100;
+        else this.health.player2 += heal2;
+
+        this.createLog(`💚 ${player1} heals himself for ${heal1}`);
+        this.createLog(`💚 ${player2} heals himself for ${heal2}`);
       }
     },
 
-    showDialogGiveUp () {
-      const giveUpDialogBackdrop = document.createElement('div')
-
-      giveUpDialogBackdrop.className = 'give-up-dialog-backdrop'
-
-      document.getElementById('give-up-dialog').setAttribute('open', 'true')
-      document.body.appendChild(giveUpDialogBackdrop)
-
+    showDialogGiveUp() {
+      const giveUpDialogBackdrop = document.createElement('div');
+      giveUpDialogBackdrop.className = 'give-up-dialog-backdrop';
+      document.getElementById('give-up-dialog').setAttribute('open', 'true');
+      document.body.appendChild(giveUpDialogBackdrop);
       giveUpDialogBackdrop.addEventListener('click', () => {
-          this.hideDialogGiveUp()
-      })
+        this.hideDialogGiveUp();
+      });
     },
 
-    hideDialogGiveUp () {
-      document.getElementById('give-up-dialog').removeAttribute('open')
-      document.querySelector('.give-up-dialog-backdrop').remove()
+    hideDialogGiveUp() {
+      document.getElementById('give-up-dialog').removeAttribute('open');
+      document.querySelector('.give-up-dialog-backdrop').remove();
     },
 
-    giveUp () {
-      const winStats = this.stats.win
-      const player1 = this.selectedPlayer.player1.name
-      const player2 = this.selectedPlayer.player2.name
-      const player1Win = winStats.player1 > winStats.player2
-      const player2Win = winStats.player2 > winStats.player1
-      const tie = winStats.player1 > 0 && winStats.player2 > 0 && winStats.player1 === winStats.player2
-      const equalWinStatsAndNotFullHealthBar = winStats.player1 === winStats.player2 && this.health.player1 < 100 && this.health.player2 < 100
-      const noWinAndLogs = winStats.player1 === 0 && winStats.player2 === 0 && this.logs.length === 1 || this.logs.length === 0
+    giveUp() {
+      const winStats = this.stats.win;
+      const player1 = this.selectedPlayer.player1.name;
+      const player2 = this.selectedPlayer.player2.name;
+      const player1Win = winStats.player1 > winStats.player2;
+      const player2Win = winStats.player2 > winStats.player1;
+      const tie = winStats.player1 > 0 && winStats.player2 > 0 && winStats.player1 === winStats.player2;
+      const equalWinStatsAndNotFullHealthBar =
+        winStats.player1 === winStats.player2 && this.health.player1 < 100 && this.health.player2 < 100;
 
       if (player1Win) {
-        this.createLog(`${player1} HAS WON THE BATTLE ⚔️, AFTER ${player2} CHOOSE TO SURRENDER.`)
+        this.createLog(`${player1} WON! ${player2} RAN AWAY!`);
       } else if (player2Win) {
-        this.createLog(`${player2} HAS WON THE BATTLE ⚔️, AFTER ${player1} CHOOSE TO SURRENDER.`)
+        this.createLog(`${player2} WON! ${player1} RAN AWAY!`);
       } else if (tie) {
-        this.createLog(`THE BATTLE ⚔️ WAS TIE.`)
-      } else if (equalWinStatsAndNotFullHealthBar) {
-        this.createLog(`THe BATTLE ⚔️ WAS EPIC! BUT TWO SIDES AGREE TO MAKE A PEACE.`)
+        this.createLog(`THE BATTLE ⚔️ ENDED IN A TIE.`);
       } else {
-        this.createLog(`THE BATTLE ⚔️ WAS NEVER HAPPAND! TWO SIDES AGREE TO MAKE A PEACE.`)
+        this.createLog(`🏳️ BATTLE CANCELLED. PEACE WAS CHOSEN.`);
       }
 
-      this.status.giveUp = true
-      this.status.play = false
-      this.status.winner = false
-      this.tracker.heal = 0
-      this.hideDialogGiveUp()
-      this.selectRandPlayers()
+      this.status.giveUp = true;
+      this.status.play = false;
+      this.status.winner = false;
+      this.tracker.heal = 0;
+      this.hideDialogGiveUp();
+      this.selectRandPlayers();
     },
 
     healthBarColorStatus(value) {
@@ -275,7 +320,7 @@ const app = new Vue({
         'is-success': value > 30 && value <= 50,
         'is-warning': value > 10 && value <= 30,
         'is-error': value <= 10,
-      }
+      };
     },
-  }
-})
+  },
+});
