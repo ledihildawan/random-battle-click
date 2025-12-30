@@ -1,23 +1,33 @@
 html,
 body {
-  overflow: hidden;
+  overflow-x: hidden;
+  height: 100%;
 }
 
 body {
-  margin-top: 32px;
+  margin: 0;
+  padding: 20px 0;
   font-family: 'Press Start 2P', cursive;
-  background: whitesmoke;
+  /* Dark Arcade Background */
+  background-color: #212529;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: #fff;
 }
 
 .container {
-  max-width: 960px;
+  max-width: 800px;
   width: 95%;
   margin: 0 auto;
-  background: #fff;
+  position: relative;
 }
 
-.no-background {
-  background: none;
+/* Header Title styling if you add one later */
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 4px 4px 0 #000;
 }
 
 .center {
@@ -26,225 +36,193 @@ body {
   margin-right: auto;
 }
 
-.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.visible {
-  opacity: 1;
-  visibility: visible;
-}
-
-.vs {
-  align-self: center;
-  background: #ffdc73;
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
-  transform: rotate(-8deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  font-weight: bold;
-}
-
+/* === BATTLE ARENA === */
 .players {
-  display: grid;
-  grid-template-columns: 1fr max-content 1fr;
-  gap: 16px;
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 10px;
 }
 
-.player {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+/* Player Card Styling */
+.player-card {
+  background: #fff;
+  color: #212529;
+  padding: 20px;
+  border-radius: 4px;
+  position: relative;
+  width: 45%;
+  /* NES CSS Border effect manually or use nes-container */
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s;
+}
+
+.player-card.active-turn {
+  border: 4px solid #f7d51d;
+  transform: translateY(-4px);
 }
 
 .player__media {
-  width: 144px;
-  height: 144px;
-  position: relative;
-}
-
-.visual-fx-container {
   position: relative;
   width: 100%;
-  height: 100%;
-}
-
-.player__win-counter {
-  padding: 24px;
-  position: absolute;
-  top: -8px;
-  right: -16px;
-  background-color: #fff;
-  border-radius: 50%;
-  height: 24px;
-  width: 24px;
+  height: 120px;
+  margin-bottom: 16px;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 4px 8px 16px rgba(0, 0, 0, 0.37);
-  z-index: 10;
 }
 
 .player__avatar {
-  width: 144px;
-  height: 144px;
-  display: block;
-  margin: 0 auto;
-  transition: filter 0.5s ease;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  image-rendering: pixelated; /* Agar gambar tajam */
+  border: 4px solid #212529;
+  background: #eee;
 }
 
-/* UX: Death State */
 .player__avatar.is-dead {
-  filter: grayscale(100%) brightness(0.7);
-  opacity: 0.8;
+  filter: grayscale(100%) contrast(1.2);
+  opacity: 0.6;
 }
 
+/* VS Badge Modernization */
+.vs-badge {
+  background: #e76e55;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 4px 4px 0 #000;
+  z-index: 5;
+  transform: rotate(-10deg);
+}
+
+/* Identity Badge */
+.identity-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  color: #fff;
+  font-size: 10px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  white-space: nowrap;
+  z-index: 10;
+}
+.badge-p1 {
+  background-color: #209cee;
+}
+.badge-p2 {
+  background-color: #e76e55;
+}
+
+/* Stats Area */
 .player__name {
-  margin-top: 8px;
+  margin-top: 0;
+  margin-bottom: 8px;
   text-align: center;
+  font-size: 12px;
+  min-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hp-text {
   text-align: center;
   font-size: 10px;
   margin-bottom: 4px;
-  color: #333;
+  font-weight: bold;
 }
 
-.player__health-bar {
-  height: 16px;
-  width: 240px;
-  margin: 0 auto;
-  transition: all 0.4s ease-in-out;
+/* Progress Bar Customization */
+.nes-progress {
+  height: 20px;
+  border-radius: 0;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* === CONTROLS === */
+.control-panel {
+  background: #fff;
+  color: #000;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .actions {
   display: flex;
   flex-direction: column;
+  gap: 16px;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  margin-bottom: 32px;
-  padding: 16px;
 }
 
 .combat-buttons {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: 16px;
-}
-
-.utility-buttons {
-  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
 }
 
 .actions__btn {
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.logs {
-  padding: 8px;
-  position: relative;
-  width: 100%;
-  height: 144px;
-  overflow: auto;
+  width: 140px; /* Fixed width for uniformity */
   font-size: 12px;
-  line-height: 1.6;
 }
 
-.logs p {
-  margin-bottom: 4px;
+/* Disabled State */
+.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  filter: grayscale(100%);
+  pointer-events: none;
 }
 
-.logs p:nth-child(odd) {
-  background: rgba(255, 0, 0, 0.08);
+/* === LOGS (TERMINAL STYLE) === */
+.logs-container {
+  margin-bottom: 40px;
 }
 
-.logs p:nth-child(even) {
-  background: rgba(0, 0, 255, 0.08);
+.logs-terminal {
+  background-color: #000 !important; /* Force Black */
+  color: #33ff00; /* Hacker Green */
+  border-color: #fff;
+  height: 180px;
+  overflow-y: auto;
+  font-size: 11px;
+  padding: 15px;
+  line-height: 1.8;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
 }
 
-.mb-2 {
-  margin-bottom: 32px;
+/* Scrollbar for logs */
+.logs-terminal::-webkit-scrollbar {
+  width: 10px;
+}
+.logs-terminal::-webkit-scrollbar-track {
+  background: #000;
+}
+.logs-terminal::-webkit-scrollbar-thumb {
+  background: #33ff00;
 }
 
-.give-up-dialog {
-  position: fixed;
-  z-index: 20;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-}
-
-.give-up-dialog-menu {
-  padding-left: 0;
-  display: flex;
-  justify-content: center;
-}
-
-.give-up-dialog-menu button:first-child {
-  margin-right: 16px;
-}
-
-.give-up-dialog-backdrop {
-  position: fixed;
+/* === ANIMATIONS & FX === */
+.visual-fx-container {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.37);
-  z-index: 15;
+  pointer-events: none;
 }
-
-/* Vue Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.4s ease;
-}
-
-.fade-enter,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.custom-1-enter-active,
-.custom-1-leave-active {
-  transition: all 0.4s ease;
-}
-
-.custom-1-enter,
-.custom-1-leave-to {
-  opacity: 0;
-  transform: translateY(100%);
-}
-
-.custom-2-enter-active,
-.custom-2-leave-active {
-  transition: all 0.4s ease;
-}
-
-.custom-2-enter,
-.custom-2-leave-to {
-  transform: scale(0);
-}
-
-/* === ANIMATIONS & FX === */
 
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
 }
 
 @keyframes shake {
@@ -268,117 +246,96 @@ body {
 }
 
 .hit-flash {
-  filter: sepia(100%) saturate(300%) hue-rotate(-50deg) saturate(500%);
+  filter: sepia(100%) saturate(300%) hue-rotate(-50deg) brightness(1.5);
   transition: filter 0.1s;
 }
 
-.log-crit {
-  color: #e76e55;
-  font-weight: bold;
-}
-
-.log-miss {
-  color: #92cc41;
-  font-style: italic;
-}
-
-/* Floating Text Styles */
+/* Floating Text */
 .floating-text {
   position: absolute;
-  top: 20%;
+  top: 0;
   left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
+  transform: translateX(-50%);
+  font-size: 20px;
   font-weight: bold;
-  pointer-events: none;
   z-index: 20;
   text-shadow: 2px 2px 0 #000;
+  width: 100%;
+  text-align: center;
 }
-
 .floating-text.damage {
   color: #fff;
+  -webkit-text-stroke: 1px #000;
 }
 .floating-text.crit {
-  color: #e76e55;
-  font-size: 30px;
+  color: #ff0000;
+  font-size: 26px;
+}
+.floating-text.heal {
+  color: #00ff00;
 }
 .floating-text.special {
   color: #f7d51d;
 }
-.floating-text.heal {
-  color: #92cc41;
-}
 .floating-text.miss {
-  color: #ccc;
-  font-size: 18px;
+  color: #aaa;
 }
 
-/* Float Up Animation */
 .float-up-enter-active {
-  transition: all 1s ease-out;
+  transition: all 0.8s ease-out;
 }
 .float-up-enter {
   opacity: 0;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, 20px);
 }
 .float-up-leave-to {
   opacity: 0;
-  transform: translate(-50%, -60px);
+  transform: translate(-50%, -50px);
 }
 
-/* Media Queries */
-@media (max-width: 767px) {
-  html,
-  body {
-    overflow: initial;
-  }
-  .vs {
-    justify-self: center;
-  }
+/* Utility */
+.mb-2 {
+  margin-bottom: 20px;
+}
+.text-center {
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
   .players {
-    grid-template-columns: 1fr;
-  }
-
-  .player__media,
-  .player__avatar {
-    width: 92px;
-    height: 92px;
-  }
-
-  .combat-buttons {
-    width: 100%;
     flex-direction: column;
+    gap: 30px;
+  }
+  .player-card {
+    width: 100%;
+  }
+  .vs-badge {
+    margin: 10px 0;
+    transform: rotate(0);
+  }
+  .combat-buttons {
+    flex-direction: column;
+    width: 100%;
   }
   .actions__btn {
     width: 100%;
-    margin: 8px 0;
-  }
-
-  .logs {
-    height: 200px;
   }
 }
 
-.identity-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  color: #fff;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+/* Dialog */
+.give-up-dialog {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999;
 }
-
-.badge-p1 {
-  background-color: #209cee;
-}
-
-.badge-p2 {
-  background-color: #e76e55;
-}
-
-.is-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
+.give-up-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 998;
 }

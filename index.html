@@ -3,171 +3,176 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Random Battle Click</title>
+    <title>Retro Battle Arcade</title>
     <link rel="stylesheet" href="./css/nes.css" />
-    <link rel="stylesheet" href="./css/perfect-scroll.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
     <div id="app">
       <div class="container">
-        <div class="players nes-container">
-          <div class="player">
-            <div class="player__media center">
-              <div class="center" style="text-align: center">
-                <span class="identity-badge badge-p1">YOU</span>
-              </div>
+        <h1 v-if="!status.play" style="color: #f7d51d">RETRO BATTLE</h1>
 
-              <transition name="custom-2">
-                <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player1 }}</div>
-              </transition>
+        <div class="players">
+          <div
+            class="player-card nes-container is-rounded"
+            :class="{ 'active-turn': status.play && !turnInProgress && !status.winner }"
+          >
+            <span class="identity-badge badge-p1 nes-badge is-splited">
+              <span class="is-dark">P1</span><span class="is-primary">YOU</span>
+            </span>
 
+            <div class="player__media">
               <div class="visual-fx-container">
                 <transition-group name="float-up" tag="div">
                   <span v-for="fx in activeFx.player1" :key="fx.id" class="floating-text" :class="fx.type"
                     >{{ fx.text }}</span
                   >
                 </transition-group>
-                <img
-                  class="player__avatar player-1-img"
-                  :class="{ 'is-dead': health.player1 <= 0 }"
-                  :src="`./img/players/${selectedPlayer.player1.avatar}`"
-                  alt=""
-                />
               </div>
+              <img
+                class="player__avatar player-1-img"
+                :class="{ 'is-dead': health.player1 <= 0 }"
+                :src="`./img/players/${selectedPlayer.player1.avatar}`"
+                alt=""
+              />
             </div>
+
             <p class="player__name">{{ selectedPlayer.player1.name }}</p>
-            <div class="hp-text" v-if="status.play || status.winner">{{ health.player1 }} / 100</div>
+            <div class="hp-text">{{ health.player1 }} / 100</div>
             <progress
-              class="nes-progress player__health-bar"
+              class="nes-progress is-primary"
               :value="health.player1"
               max="100"
-              :class="[healthBarColorStatus(health.player1), { hidden: !status.play }, { visible: status.winner }, { 'player__health-bar--xs': status.play || status.winner }]"
+              :class="healthBarColorStatus(health.player1)"
             ></progress>
+
+            <div style="text-align: center; margin-top: 8px" v-if="stats.win.player1 > 0">
+              <i class="nes-icon trophy is-small"></i> x{{ stats.win.player1 }}
+            </div>
           </div>
 
-          <div class="vs">VS</div>
+          <div class="vs-badge">VS</div>
 
-          <div class="player">
-            <div class="player__media center">
-              <div class="center" style="text-align: center">
-                <span class="identity-badge badge-p2">CPU</span>
-              </div>
+          <div
+            class="player-card nes-container is-rounded"
+            :class="{ 'active-turn': status.play && turnInProgress && !status.winner }"
+          >
+            <span class="identity-badge badge-p2 nes-badge is-splited">
+              <span class="is-dark">CPU</span><span class="is-error">ENEMY</span>
+            </span>
 
-              <transition name="custom-2">
-                <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player2 }}</div>
-              </transition>
-
+            <div class="player__media">
               <div class="visual-fx-container">
                 <transition-group name="float-up" tag="div">
                   <span v-for="fx in activeFx.player2" :key="fx.id" class="floating-text" :class="fx.type"
                     >{{ fx.text }}</span
                   >
                 </transition-group>
-                <img
-                  class="player__avatar player-2-img"
-                  :class="{ 'is-dead': health.player2 <= 0 }"
-                  :src="`./img/players/${selectedPlayer.player2.avatar}`"
-                  alt=""
-                />
               </div>
+              <img
+                class="player__avatar player-2-img"
+                :class="{ 'is-dead': health.player2 <= 0 }"
+                :src="`./img/players/${selectedPlayer.player2.avatar}`"
+                alt=""
+              />
             </div>
+
             <p class="player__name">{{ selectedPlayer.player2.name }}</p>
-            <div class="hp-text" v-if="status.play || status.winner">{{ health.player2 }} / 100</div>
+            <div class="hp-text">{{ health.player2 }} / 100</div>
             <progress
-              class="nes-progress player__health-bar"
+              class="nes-progress is-error"
               :value="health.player2"
               max="100"
-              :class="[healthBarColorStatus(health.player2), { hidden: !status.play }, { visible: status.winner }, { 'player__health-bar--xs': status.play || status.winner }]"
+              :class="healthBarColorStatus(health.player2)"
             ></progress>
+
+            <div style="text-align: center; margin-top: 8px" v-if="stats.win.player2 > 0">
+              <i class="nes-icon trophy is-small"></i> x{{ stats.win.player2 }}
+            </div>
+          </div>
+        </div>
+
+        <div class="nes-container with-title is-centered control-panel" v-if="status.play || status.winner">
+          <p class="title">Control Panel</p>
+
+          <div class="actions">
+            <div class="combat-buttons" v-if="!status.winner">
+              <button
+                type="button"
+                class="nes-btn is-error actions__btn"
+                :class="{ 'is-disabled': turnInProgress }"
+                @click="playerAttack('normal')"
+              >
+                🗡️ Attack
+              </button>
+
+              <button
+                type="button"
+                class="nes-btn is-warning actions__btn"
+                :class="{ 'is-disabled': turnInProgress }"
+                @click="playerAttack('special')"
+              >
+                ✨ Special
+              </button>
+
+              <button
+                type="button"
+                class="nes-btn is-success actions__btn"
+                :class="{ 'is-disabled': (health.player1 >= 100) || tracker.heal >= limit.heal || turnInProgress }"
+                @click="playerHeal"
+              >
+                💊 Heal ({{ limit.heal - tracker.heal }})
+              </button>
+            </div>
+
+            <div class="combat-buttons" v-else>
+              <button class="nes-btn is-primary" @click="reBattle">⚔️ Play Again</button>
+              <button class="nes-btn" @click="exitGame">Exit</button>
+            </div>
+
+            <div v-if="!status.winner">
+              <button class="nes-btn is-small" @click="showDialogGiveUp" style="margin-top: 10px; opacity: 0.7">
+                🏳️ Surrender
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!status.play && !status.winner" style="text-align: center; margin-top: 50px">
+          <button
+            type="button"
+            class="nes-btn is-primary center start-game-btn"
+            style="font-size: 20px; padding: 10px 30px"
+            @click="startNewGame"
+          >
+            ▶ INSERT COIN / START
+          </button>
+        </div>
+
+        <div class="logs-container" v-show="logs.length > 0">
+          <div class="nes-container is-dark with-title">
+            <p class="title">Battle Log</p>
+            <div class="logs-terminal">
+              <p v-for="(log, index) in logs" :key="index" v-html="`> ` + log"></p>
+              <p v-if="logs.length === 0">System Ready...</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-if="!status.play && !status.winner" class="mb-2 container no-background">
-        <button type="button" class="nes-btn center start-game-btn" @click="startNewGame">▶ Start Game</button>
-      </div>
-
-      <div class="container">
-        <div class="nes-container actions actions--alt" v-if="status.winner">
-          <button type="button" class="nes-btn actions__btn" @click="exitGame">🚪 Exit</button>
-          <button type="button" class="nes-btn is-primary actions__btn" @click="reBattle">⚔️ Re-Battle</button>
-        </div>
-      </div>
-
-      <div class="container" v-if="status.play">
-        <div class="nes-container actions">
-          <div class="combat-buttons">
-            <button
-              type="button"
-              class="nes-btn is-error actions__btn"
-              :class="{ 'is-disabled': turnInProgress }"
-              :disabled="turnInProgress"
-              @click="playerAttack('normal')"
-            >
-              Attack
-            </button>
-
-            <button
-              type="button"
-              class="nes-btn is-primary actions__btn"
-              :class="{ 'is-disabled': turnInProgress }"
-              :disabled="turnInProgress"
-              @click="playerAttack('special')"
-            >
-              Special
-            </button>
-
-            <button
-              type="button"
-              class="nes-btn is-success actions__btn"
-              :class="{
-                'is-disabled': (health.player1 >= 100) || tracker.heal >= limit.heal || turnInProgress
-              }"
-              :disabled="(health.player1 >= 100) || tracker.heal >= limit.heal || turnInProgress"
-              @click="playerHeal"
-            >
-              Heal ({{ limit.heal - tracker.heal }})
-            </button>
-          </div>
-
-          <div class="utility-buttons">
-            <button
-              class="actions__btn nes-btn is-warning"
-              @click="showDialogGiveUp"
-              type="button"
-              style="margin-top: 16px"
-            >
-              🏳️ Give Up
-            </button>
-          </div>
-
-          <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
-            <form method="dialog">
-              <p class="text-center">Are you sure you want to surrender?</p>
-              <menu class="dialog-menu give-up-dialog-menu">
-                <button class="nes-btn" @click.prevent="hideDialogGiveUp">No</button>
-                <button class="nes-btn is-error" @click="giveUp">Yes</button>
-              </menu>
-            </form>
-          </dialog>
-        </div>
-      </div>
-
-      <transition name="custom-1">
-        <div class="container" v-show="status.play || status.winner || (status.giveUp && logs.length)">
-          <div class="logs nes-container mb-2">
-            <template v-if="logs.length">
-              <p v-for="(log, index) in logs" :key="index" v-html="log"></p>
-            </template>
-            <p v-else>Battle started! Your turn.</p>
-          </div>
-        </div>
-      </transition>
+      <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
+        <form method="dialog">
+          <p class="title">Surrender?</p>
+          <p>There is no honor in giving up.</p>
+          <menu class="dialog-menu">
+            <button class="nes-btn" @click.prevent="hideDialogGiveUp">Cancel</button>
+            <button class="nes-btn is-error" @click="giveUp">Confirm</button>
+          </menu>
+        </form>
+      </dialog>
     </div>
 
     <script src="./js/vue.js"></script>
-    <script src="./js/perfect-scroll.js"></script>
     <script src="./js/script.js"></script>
   </body>
 </html>
