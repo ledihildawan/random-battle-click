@@ -25,27 +25,19 @@ const app = new Vue({
         player1: 100,
         player2: 100,
       },
-      // New: Stores floating text objects
-      activeFx: {
-        player1: [],
-        player2: [],
-      },
+      activeFx: { player1: [], player2: [] },
       status: {
         play: false,
         winner: false,
         giveUp: false,
       },
-      limit: {
-        heal: 3,
-      },
-      tracker: {
-        heal: 0,
-      },
+      // State baru untuk mengatur giliran
+      turnInProgress: false,
+
+      limit: { heal: 3 },
+      tracker: { heal: 0 },
       stats: {
-        win: {
-          player1: 0,
-          player2: 0,
-        },
+        win: { player1: 0, player2: 0 },
       },
       logs: [],
     };
@@ -56,6 +48,7 @@ const app = new Vue({
   },
 
   methods: {
+    // --- UTILS ---
     getRandPlayers() {
       return this.players[Math.floor(Math.random() * this.players.length)];
     },
@@ -63,11 +56,10 @@ const app = new Vue({
     selectRandPlayers() {
       const rand = setInterval(() => {
         if (this.status.play) clearInterval(rand);
-
         this.selectedPlayer.player1 = this.getRandPlayers();
         this.selectedPlayer.player2 = this.getRandPlayers();
-
-        if (this.selectedPlayer.player1 === this.selectedPlayer.player2) {
+        // Pastikan tidak sama
+        if (this.selectedPlayer.player1.id === this.selectedPlayer.player2.id) {
           this.selectedPlayer.player2 = this.getRandPlayers();
         }
       }, 1000);
@@ -85,11 +77,13 @@ const app = new Vue({
       });
     },
 
+    // --- GAME STATES ---
     startNewGame() {
       this.resetCrown(['player1', 'player2']);
       this.status.play = true;
       this.status.winner = false;
       this.status.giveUp = false;
+      this.turnInProgress = false; // Reset turn state
       this.health.player1 = 100;
       this.health.player2 = 100;
       this.tracker.heal = 0;
@@ -103,6 +97,7 @@ const app = new Vue({
       this.status.play = true;
       this.status.winner = false;
       this.status.giveUp = false;
+      this.turnInProgress = false;
       this.health.player1 = 100;
       this.health.player2 = 100;
       this.tracker.heal = 0;
@@ -124,45 +119,37 @@ const app = new Vue({
     gameOver() {
       this.status.play = false;
       this.status.winner = true;
-      this.status.giveUp = false;
+      this.turnInProgress = false;
     },
 
-    determineTheWinner() {
-      // Double KO
-      if (this.health.player1 <= 0 && this.health.player2 <= 0) {
-        this.health.player1 = 0;
-        this.health.player2 = 0;
-        this.createLog('DOUBLE KO! NO ONE WINS THIS BATTLE ⚔️');
-        this.gameOver();
-        return true;
-      }
-
-      // Player 2 Wins
-      if (this.health.player1 <= 0) {
-        const name = this.selectedPlayer.player2.name.toUpperCase();
-        this.selectedPlayer.player2.name = `👑 ${name}`;
-        this.stats.win.player2 += 1;
-        this.health.player1 = 0;
-        this.createLog(`${name} HAS WON THE BATTLE ⚔️`);
-        this.gameOver();
-        return true;
-      }
-
-      // Player 1 Wins
+    checkWinner() {
+      // Player 2 Mati (You Win)
       if (this.health.player2 <= 0) {
+        this.health.player2 = 0;
         const name = this.selectedPlayer.player1.name.toUpperCase();
         this.selectedPlayer.player1.name = `👑 ${name}`;
         this.stats.win.player1 += 1;
-        this.health.player2 = 0;
-        this.createLog(`${name} HAS WON THE BATTLE ⚔️`);
+        this.createLog(
+          `<span style="color:#209cee">🏆 VICTORY! You defeated ${this.selectedPlayer.player2.name}!</span>`
+        );
         this.gameOver();
         return true;
       }
 
+      // Player 1 Mati (CPU Wins)
+      if (this.health.player1 <= 0) {
+        this.health.player1 = 0;
+        const name = this.selectedPlayer.player2.name.toUpperCase();
+        this.selectedPlayer.player2.name = `👑 ${name}`;
+        this.stats.win.player2 += 1;
+        this.createLog(`<span style="color:#e76e55">💀 DEFEAT! You were defeated by ${name}.</span>`);
+        this.gameOver();
+        return true;
+      }
       return false;
     },
 
-    calcDamage(min = 2, max = 10) {
+    calcDamage(min, max) {
       return Math.max(Math.floor(Math.random() * max) + 1, min);
     },
 
@@ -171,145 +158,150 @@ const app = new Vue({
       this.logs.push(message);
       if (logsContainer) {
         setTimeout(() => {
-          logsContainer.scrollTo({
-            left: 0,
-            top: logsContainer.scrollHeight,
-            behavior: 'smooth',
-          });
+          logsContainer.scrollTo({ left: 0, top: logsContainer.scrollHeight, behavior: 'smooth' });
         }, 50);
       }
     },
 
+    // --- VISUAL EFFECTS ---
     triggerVisualEffect(targetPlayer) {
       const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
       const el = document.querySelector(selector);
       if (el) {
-        el.classList.remove('shake');
-        el.classList.remove('hit-flash');
+        el.classList.remove('shake', 'hit-flash');
         void el.offsetWidth;
-        el.classList.add('shake');
-        el.classList.add('hit-flash');
+        el.classList.add('shake', 'hit-flash');
         setTimeout(() => el.classList.remove('hit-flash'), 200);
       }
     },
 
-    // --- UX: Floating Combat Text ---
     spawnFloatingText(targetPlayer, text, type) {
       const id = Date.now() + Math.random();
-      const fxObj = { id, text, type };
-
-      // Add to array
-      this.activeFx[targetPlayer].push(fxObj);
-
-      // Remove after animation (1s)
+      this.activeFx[targetPlayer].push({ id, text, type });
       setTimeout(() => {
         this.activeFx[targetPlayer] = this.activeFx[targetPlayer].filter((fx) => fx.id !== id);
       }, 1000);
     },
 
-    attack() {
-      const p1Name = this.selectedPlayer.player1.name;
+    // --- NEW COMBAT FLOW ---
+
+    // 1. Fungsi serangan Player (Dipanggil saat klik tombol)
+    playerAttack(type) {
+      if (this.turnInProgress) return; // Mencegah spam klik
+
+      this.turnInProgress = true; // Kunci tombol
+
       const p2Name = this.selectedPlayer.player2.name;
+      let damage = 0;
+      let isCrit = false;
+      let isMiss = false;
 
-      let dmgTakenByP1 = this.calcDamage(3, 10);
-      let dmgTakenByP2 = this.calcDamage(3, 10);
+      // Hitung Damage berdasarkan tipe serangan
+      if (type === 'normal') {
+        damage = this.calcDamage(3, 10);
+        if (Math.random() < 0.15) {
+          damage *= 2;
+          isCrit = true;
+        }
+      } else if (type === 'special') {
+        damage = this.calcDamage(10, 25);
+        if (Math.random() < 0.2) {
+          damage = 0;
+          isMiss = true;
+        }
+      }
 
-      const p1Crit = Math.random() < 0.15;
-      const p2Crit = Math.random() < 0.15;
-
-      if (p1Crit) dmgTakenByP2 *= 2;
-      if (p2Crit) dmgTakenByP1 *= 2;
-
-      // Apply Damage
-      this.health.player1 -= dmgTakenByP1;
-      this.health.player2 -= dmgTakenByP2;
-
-      this.triggerVisualEffect('player1');
-      this.triggerVisualEffect('player2');
-
-      // Floating Text UX
-      this.spawnFloatingText('player1', `-${dmgTakenByP1}`, p2Crit ? 'crit' : 'damage');
-      this.spawnFloatingText('player2', `-${dmgTakenByP2}`, p1Crit ? 'crit' : 'damage');
-
-      // Logs
-      if (p1Crit)
-        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p1Name} hits ${p2Name} for ${dmgTakenByP2}!!</span>`);
-      else this.createLog(`${p1Name} hits ${p2Name} for ${dmgTakenByP2}`);
-
-      if (p2Crit)
-        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p2Name} hits ${p1Name} for ${dmgTakenByP1}!!</span>`);
-      else this.createLog(`${p2Name} hits ${p1Name} for ${dmgTakenByP1}`);
-
-      if (this.determineTheWinner()) return;
-      this.determineTheWinner();
-    },
-
-    specialAttack() {
-      const p1Name = this.selectedPlayer.player1.name;
-      const p2Name = this.selectedPlayer.player2.name;
-
-      const dmgTakenByP1 = this.calcDamage(15, 30);
-      const dmgTakenByP2 = this.calcDamage(15, 30);
-
-      const p1Miss = Math.random() < 0.2;
-      const p2Miss = Math.random() < 0.2;
-
-      // P1 Attacks P2
-      if (!p1Miss) {
-        this.health.player2 -= dmgTakenByP2;
+      // Eksekusi ke Musuh (P2)
+      if (isMiss) {
+        this.spawnFloatingText('player2', 'MISS', 'miss');
+        this.createLog(`💨 You tried Special Attack on ${p2Name} but MISSED!`);
+      } else {
+        this.health.player2 -= damage;
         this.triggerVisualEffect('player2');
-        this.spawnFloatingText('player2', `-${dmgTakenByP2}`, 'special');
-        this.createLog(`✨ ${p1Name} BLASTS ${p2Name} for ${dmgTakenByP2}`);
-      } else {
-        this.spawnFloatingText('player2', `MISS`, 'miss');
-        this.createLog(`<span class="log-miss">💨 ${p1Name} used Special Attack but MISSED!</span>`);
+
+        if (type === 'special') {
+          this.spawnFloatingText('player2', `-${damage}`, 'special');
+          this.createLog(`✨ You BLASTED ${p2Name} for ${damage} damage!`);
+        } else {
+          this.spawnFloatingText('player2', `-${damage}`, isCrit ? 'crit' : 'damage');
+          if (isCrit) this.createLog(`<span class="log-crit">💥 CRITICAL! You hit ${p2Name} for ${damage}!</span>`);
+          else this.createLog(`You hit ${p2Name} for ${damage}.`);
+        }
       }
 
-      // P2 Attacks P1
-      if (!p2Miss) {
-        this.health.player1 -= dmgTakenByP1;
-        this.triggerVisualEffect('player1');
-        this.spawnFloatingText('player1', `-${dmgTakenByP1}`, 'special');
-        this.createLog(`✨ ${p2Name} BLASTS ${p1Name} for ${dmgTakenByP1}`);
+      // Cek jika musuh mati, game selesai. Jika tidak, giliran musuh.
+      if (this.checkWinner()) {
+        // Game over, jangan lanjut ke musuh
       } else {
-        this.spawnFloatingText('player1', `MISS`, 'miss');
-        this.createLog(`<span class="log-miss">💨 ${p2Name} used Special Attack but MISSED!</span>`);
+        // Jeda 800ms sebelum musuh membalas (memberi efek "Turn")
+        setTimeout(() => {
+          this.enemyTurn();
+        }, 800);
       }
-
-      if (this.determineTheWinner()) return;
-      this.determineTheWinner();
     },
 
-    heal() {
-      if (this.tracker.heal >= this.limit.heal) return;
+    // 2. Fungsi Heal Player
+    playerHeal() {
+      if (this.turnInProgress || this.tracker.heal >= this.limit.heal) return;
 
+      this.turnInProgress = true;
       this.tracker.heal++;
-      const p1Name = this.selectedPlayer.player1.name;
-      const p2Name = this.selectedPlayer.player2.name;
 
-      const healP1 = Math.floor(Math.random() * 15) + 10;
-      const healP2 = Math.floor(Math.random() * 15) + 10;
-
-      this.health.player1 += healP1;
+      const healAmount = Math.floor(Math.random() * 15) + 10;
+      this.health.player1 += healAmount;
       if (this.health.player1 > 100) this.health.player1 = 100;
 
-      this.health.player2 += healP2;
-      if (this.health.player2 > 100) this.health.player2 = 100;
+      this.spawnFloatingText('player1', `+${healAmount}`, 'heal');
+      this.createLog(`💚 You healed yourself for ${healAmount} HP.`);
 
-      // Floating Text UX
-      this.spawnFloatingText('player1', `+${healP1}`, 'heal');
-      this.spawnFloatingText('player2', `+${healP2}`, 'heal');
-
-      this.createLog(`💚 ${p1Name} heals for ${healP1}`);
-      this.createLog(`💚 ${p2Name} heals for ${healP2}`);
+      // Setelah heal, musuh tetap menyerang
+      setTimeout(() => {
+        this.enemyTurn();
+      }, 800);
     },
 
+    // 3. Giliran Musuh (CPU)
+    enemyTurn() {
+      if (this.status.winner) return;
+
+      const p1Name = this.selectedPlayer.player1.name;
+      const p2Name = this.selectedPlayer.player2.name;
+
+      // Logika sederhana AI: Random damage normal
+      // Bisa dikembangkan: AI punya kesempatan kecil Special Attack
+
+      let damage = this.calcDamage(4, 12); // Base damage musuh sedikit lebih sakit agar menantang
+      let isCrit = Math.random() < 0.15;
+
+      if (isCrit) damage *= 2;
+
+      this.health.player1 -= damage;
+      this.triggerVisualEffect('player1');
+
+      this.spawnFloatingText('player1', `-${damage}`, isCrit ? 'crit' : 'damage');
+
+      if (isCrit) {
+        this.createLog(
+          `<span class="log-crit" style="color:#e76e55">💥 ENEMY CRIT! ${p2Name} hits You for ${damage}!</span>`
+        );
+      } else {
+        this.createLog(`${p2Name} attacks You for ${damage}.`);
+      }
+
+      // Cek apakah player mati
+      if (!this.checkWinner()) {
+        // Jika player masih hidup, kembalikan kontrol ke player
+        this.turnInProgress = false;
+      }
+    },
+
+    // --- DIALOGS ---
     showDialogGiveUp() {
-      const giveUpDialogBackdrop = document.createElement('div');
-      giveUpDialogBackdrop.className = 'give-up-dialog-backdrop';
+      const backdrop = document.createElement('div');
+      backdrop.className = 'give-up-dialog-backdrop';
       document.getElementById('give-up-dialog').setAttribute('open', 'true');
-      document.body.appendChild(giveUpDialogBackdrop);
-      giveUpDialogBackdrop.addEventListener('click', () => {
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', () => {
         this.hideDialogGiveUp();
       });
     },
@@ -322,29 +314,11 @@ const app = new Vue({
     },
 
     giveUp() {
-      const winStats = this.stats.win;
-      const p1Name = this.selectedPlayer.player1.name;
-      const p2Name = this.selectedPlayer.player2.name;
-      const player1Win = winStats.player1 > winStats.player2;
-      const player2Win = winStats.player2 > winStats.player1;
-      const tie = winStats.player1 === winStats.player2;
-
-      if (player1Win) {
-        this.createLog(`${p1Name} HAS WON! ${p2Name} SURRENDERED.`);
-      } else if (player2Win) {
-        this.createLog(`${p2Name} HAS WON! ${p1Name} SURRENDERED.`);
-      } else if (tie) {
-        this.createLog(`THE BATTLE ⚔️ ENDED IN A DRAW.`);
-      } else {
-        this.createLog(`PEACE WAS CHOSEN.`);
-      }
-
-      this.status.giveUp = true;
+      this.createLog(`🏳️ YOU SURRENDERED. Game Over.`);
+      this.health.player1 = 0; // Set 0 agar visual mati
+      this.status.winner = true;
       this.status.play = false;
-      this.status.winner = false;
-      this.tracker.heal = 0;
       this.hideDialogGiveUp();
-      this.selectRandPlayers();
     },
 
     healthBarColorStatus(value) {

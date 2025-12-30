@@ -14,6 +14,10 @@
         <div class="players nes-container">
           <div class="player">
             <div class="player__media center">
+              <div class="center" style="text-align: center">
+                <span class="identity-badge badge-p1">YOU</span>
+              </div>
+
               <transition name="custom-2">
                 <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player1 }}</div>
               </transition>
@@ -28,14 +32,12 @@
                   class="player__avatar player-1-img"
                   :class="{ 'is-dead': health.player1 <= 0 }"
                   :src="`./img/players/${selectedPlayer.player1.avatar}`"
-                  alt="Player 1 Avatar"
+                  alt=""
                 />
               </div>
             </div>
             <p class="player__name">{{ selectedPlayer.player1.name }}</p>
-
             <div class="hp-text" v-if="status.play || status.winner">{{ health.player1 }} / 100</div>
-
             <progress
               class="nes-progress player__health-bar"
               :value="health.player1"
@@ -48,6 +50,10 @@
 
           <div class="player">
             <div class="player__media center">
+              <div class="center" style="text-align: center">
+                <span class="identity-badge badge-p2">CPU</span>
+              </div>
+
               <transition name="custom-2">
                 <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player2 }}</div>
               </transition>
@@ -62,14 +68,12 @@
                   class="player__avatar player-2-img"
                   :class="{ 'is-dead': health.player2 <= 0 }"
                   :src="`./img/players/${selectedPlayer.player2.avatar}`"
-                  alt="Player 2 Avatar"
+                  alt=""
                 />
               </div>
             </div>
             <p class="player__name">{{ selectedPlayer.player2.name }}</p>
-
             <div class="hp-text" v-if="status.play || status.winner">{{ health.player2 }} / 100</div>
-
             <progress
               class="nes-progress player__health-bar"
               :value="health.player2"
@@ -94,18 +98,34 @@
       <div class="container" v-if="status.play">
         <div class="nes-container actions">
           <div class="combat-buttons">
-            <button type="button" class="nes-btn is-error actions__btn" @click="attack">Attack</button>
-            <button type="button" class="nes-btn is-primary actions__btn" @click="specialAttack">Special</button>
+            <button
+              type="button"
+              class="nes-btn is-error actions__btn"
+              :class="{ 'is-disabled': turnInProgress }"
+              :disabled="turnInProgress"
+              @click="playerAttack('normal')"
+            >
+              Attack
+            </button>
+
+            <button
+              type="button"
+              class="nes-btn is-primary actions__btn"
+              :class="{ 'is-disabled': turnInProgress }"
+              :disabled="turnInProgress"
+              @click="playerAttack('special')"
+            >
+              Special
+            </button>
+
             <button
               type="button"
               class="nes-btn is-success actions__btn"
               :class="{
-                'is-disabled':
-                  (health.player1 >= 100 && health.player2 >= 100) ||
-                  tracker.heal >= limit.heal
+                'is-disabled': (health.player1 >= 100) || tracker.heal >= limit.heal || turnInProgress
               }"
-              @click="heal"
-              :disabled="(health.player1 >= 100 && health.player2 >= 100) || tracker.heal >= limit.heal"
+              :disabled="(health.player1 >= 100) || tracker.heal >= limit.heal || turnInProgress"
+              @click="playerHeal"
             >
               Heal ({{ limit.heal - tracker.heal }})
             </button>
@@ -126,8 +146,8 @@
             <form method="dialog">
               <p class="text-center">Are you sure you want to surrender?</p>
               <menu class="dialog-menu give-up-dialog-menu">
-                <button class="nes-btn" @click.prevent="hideDialogGiveUp">No, fight!</button>
-                <button class="nes-btn is-error" @click="giveUp">Yes, I yield</button>
+                <button class="nes-btn" @click.prevent="hideDialogGiveUp">No</button>
+                <button class="nes-btn is-error" @click="giveUp">Yes</button>
               </menu>
             </form>
           </dialog>
@@ -140,7 +160,7 @@
             <template v-if="logs.length">
               <p v-for="(log, index) in logs" :key="index" v-html="log"></p>
             </template>
-            <p v-else>Battle started! Waiting for action...</p>
+            <p v-else>Battle started! Your turn.</p>
           </div>
         </div>
       </transition>
