@@ -358,3 +358,27 @@ body {
     height: 200px;
   }
 }
+
+.identity-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #fff;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.badge-p1 {
+  background-color: #209cee;
+}
+
+.badge-p2 {
+  background-color: #e76e55;
+}
+
+.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
