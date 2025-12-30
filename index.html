@@ -17,13 +17,25 @@
               <transition name="custom-2">
                 <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player1 }}</div>
               </transition>
-              <img
-                class="player__avatar player-1-img"
-                :src="`./img/players/${selectedPlayer.player1.avatar}`"
-                alt="Player 1 Avatar"
-              />
+
+              <div class="visual-fx-container">
+                <transition-group name="float-up" tag="div">
+                  <span v-for="fx in activeFx.player1" :key="fx.id" class="floating-text" :class="fx.type"
+                    >{{ fx.text }}</span
+                  >
+                </transition-group>
+                <img
+                  class="player__avatar player-1-img"
+                  :class="{ 'is-dead': health.player1 <= 0 }"
+                  :src="`./img/players/${selectedPlayer.player1.avatar}`"
+                  alt="Player 1 Avatar"
+                />
+              </div>
             </div>
             <p class="player__name">{{ selectedPlayer.player1.name }}</p>
+
+            <div class="hp-text" v-if="status.play || status.winner">{{ health.player1 }} / 100</div>
+
             <progress
               class="nes-progress player__health-bar"
               :value="health.player1"
@@ -39,13 +51,25 @@
               <transition name="custom-2">
                 <div class="player__win-counter" v-show="status.play || status.winner">{{ stats.win.player2 }}</div>
               </transition>
-              <img
-                class="player__avatar player-2-img"
-                :src="`./img/players/${selectedPlayer.player2.avatar}`"
-                alt="Player 2 Avatar"
-              />
+
+              <div class="visual-fx-container">
+                <transition-group name="float-up" tag="div">
+                  <span v-for="fx in activeFx.player2" :key="fx.id" class="floating-text" :class="fx.type"
+                    >{{ fx.text }}</span
+                  >
+                </transition-group>
+                <img
+                  class="player__avatar player-2-img"
+                  :class="{ 'is-dead': health.player2 <= 0 }"
+                  :src="`./img/players/${selectedPlayer.player2.avatar}`"
+                  alt="Player 2 Avatar"
+                />
+              </div>
             </div>
             <p class="player__name">{{ selectedPlayer.player2.name }}</p>
+
+            <div class="hp-text" v-if="status.play || status.winner">{{ health.player2 }} / 100</div>
+
             <progress
               class="nes-progress player__health-bar"
               :value="health.player2"
@@ -63,39 +87,47 @@
       <div class="container">
         <div class="nes-container actions actions--alt" v-if="status.winner">
           <button type="button" class="nes-btn actions__btn" @click="exitGame">🚪 Exit</button>
-
-          <button type="button" class="nes-btn actions__btn" @click="reBattle">⚔️ Re-Battle</button>
+          <button type="button" class="nes-btn is-primary actions__btn" @click="reBattle">⚔️ Re-Battle</button>
         </div>
       </div>
 
       <div class="container" v-if="status.play">
         <div class="nes-container actions">
-          <button type="button" class="nes-btn is-error actions__btn" @click="attack">Attack</button>
+          <div class="combat-buttons">
+            <button type="button" class="nes-btn is-error actions__btn" @click="attack">Attack</button>
+            <button type="button" class="nes-btn is-primary actions__btn" @click="specialAttack">Special</button>
+            <button
+              type="button"
+              class="nes-btn is-success actions__btn"
+              :class="{
+                'is-disabled':
+                  (health.player1 >= 100 && health.player2 >= 100) ||
+                  tracker.heal >= limit.heal
+              }"
+              @click="heal"
+              :disabled="(health.player1 >= 100 && health.player2 >= 100) || tracker.heal >= limit.heal"
+            >
+              Heal ({{ limit.heal - tracker.heal }})
+            </button>
+          </div>
 
-          <button type="button" class="nes-btn is-primary actions__btn" @click="specialAttack">Special Attack</button>
-
-          <button
-            type="button"
-            class="nes-btn is-success actions__btn"
-            :class="{
-              'is-disabled':
-                (health.player1 >= 90 && health.player2 >= 90) ||
-                tracker.heal >= 3
-            }"
-            @click="heal"
-            :disabled="(health.player1 >= 90 && health.player2 >= 90) || tracker.heal >= 3"
-          >
-            Heal ({{ limit.heal - tracker.heal }})
-          </button>
-
-          <button class="actions__btn nes-btn" @click="showDialogGiveUp" type="button">Give Up</button>
+          <div class="utility-buttons">
+            <button
+              class="actions__btn nes-btn is-warning"
+              @click="showDialogGiveUp"
+              type="button"
+              style="margin-top: 16px"
+            >
+              🏳️ Give Up
+            </button>
+          </div>
 
           <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
             <form method="dialog">
-              <p class="text-center">Are you sure you want to give up?</p>
+              <p class="text-center">Are you sure you want to surrender?</p>
               <menu class="dialog-menu give-up-dialog-menu">
-                <button class="nes-btn" @click.prevent="hideDialogGiveUp">Hell no!</button>
-                <button class="nes-btn is-primary" @click="giveUp">Yes</button>
+                <button class="nes-btn" @click.prevent="hideDialogGiveUp">No, fight!</button>
+                <button class="nes-btn is-error" @click="giveUp">Yes, I yield</button>
               </menu>
             </form>
           </dialog>
@@ -108,7 +140,7 @@
             <template v-if="logs.length">
               <p v-for="(log, index) in logs" :key="index" v-html="log"></p>
             </template>
-            <p v-else>There are no activities in the battle right now.</p>
+            <p v-else>Battle started! Waiting for action...</p>
           </div>
         </div>
       </transition>
