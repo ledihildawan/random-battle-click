@@ -25,6 +25,11 @@ const app = new Vue({
         player1: 100,
         player2: 100,
       },
+      // New: Stores floating text objects
+      activeFx: {
+        player1: [],
+        player2: [],
+      },
       status: {
         play: false,
         winner: false,
@@ -89,8 +94,8 @@ const app = new Vue({
       this.health.player2 = 100;
       this.tracker.heal = 0;
       this.logs = [];
-      this.stats.win.player1 = 0;
-      this.stats.win.player2 = 0;
+      this.activeFx.player1 = [];
+      this.activeFx.player2 = [];
     },
 
     reBattle() {
@@ -102,6 +107,8 @@ const app = new Vue({
       this.health.player2 = 100;
       this.tracker.heal = 0;
       this.logs = [];
+      this.activeFx.player1 = [];
+      this.activeFx.player2 = [];
     },
 
     exitGame() {
@@ -123,6 +130,8 @@ const app = new Vue({
     determineTheWinner() {
       // Double KO
       if (this.health.player1 <= 0 && this.health.player2 <= 0) {
+        this.health.player1 = 0;
+        this.health.player2 = 0;
         this.createLog('DOUBLE KO! NO ONE WINS THIS BATTLE ⚔️');
         this.gameOver();
         return true;
@@ -158,11 +167,8 @@ const app = new Vue({
     },
 
     createLog(message) {
-      // Using querySelector here to ensure we find it even if DOM updated
       const logsContainer = document.querySelector('.logs');
-
       this.logs.push(message);
-
       if (logsContainer) {
         setTimeout(() => {
           logsContainer.scrollTo({
@@ -174,60 +180,65 @@ const app = new Vue({
       }
     },
 
-    // Triggers the CSS shake animation
     triggerVisualEffect(targetPlayer) {
       const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
       const el = document.querySelector(selector);
       if (el) {
         el.classList.remove('shake');
         el.classList.remove('hit-flash');
-
-        // Force Reflow to restart animation
         void el.offsetWidth;
-
         el.classList.add('shake');
         el.classList.add('hit-flash');
-
-        // Remove flash filter quickly
         setTimeout(() => el.classList.remove('hit-flash'), 200);
       }
+    },
+
+    // --- UX: Floating Combat Text ---
+    spawnFloatingText(targetPlayer, text, type) {
+      const id = Date.now() + Math.random();
+      const fxObj = { id, text, type };
+
+      // Add to array
+      this.activeFx[targetPlayer].push(fxObj);
+
+      // Remove after animation (1s)
+      setTimeout(() => {
+        this.activeFx[targetPlayer] = this.activeFx[targetPlayer].filter((fx) => fx.id !== id);
+      }, 1000);
     },
 
     attack() {
       const p1Name = this.selectedPlayer.player1.name;
       const p2Name = this.selectedPlayer.player2.name;
 
-      // Calculate base damage
-      let damageTakenByP1 = this.calcDamage(3, 10); // Damage P2 deals to P1
-      let damageTakenByP2 = this.calcDamage(3, 10); // Damage P1 deals to P2
+      let dmgTakenByP1 = this.calcDamage(3, 10);
+      let dmgTakenByP2 = this.calcDamage(3, 10);
 
-      // Critical Hit Chance (15%)
-      const p1Crit = Math.random() < 0.15; // P1 lands a crit on P2
-      const p2Crit = Math.random() < 0.15; // P2 lands a crit on P1
+      const p1Crit = Math.random() < 0.15;
+      const p2Crit = Math.random() < 0.15;
 
-      if (p1Crit) damageTakenByP2 *= 2;
-      if (p2Crit) damageTakenByP1 *= 2;
+      if (p1Crit) dmgTakenByP2 *= 2;
+      if (p2Crit) dmgTakenByP1 *= 2;
 
       // Apply Damage
-      this.health.player1 -= damageTakenByP1;
-      this.health.player2 -= damageTakenByP2;
+      this.health.player1 -= dmgTakenByP1;
+      this.health.player2 -= dmgTakenByP2;
 
-      // Trigger Effects
       this.triggerVisualEffect('player1');
       this.triggerVisualEffect('player2');
 
-      // Generate Logs
-      if (p1Crit) {
-        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p1Name} hits ${p2Name} for ${damageTakenByP2}!!</span>`);
-      } else {
-        this.createLog(`${p1Name} hits ${p2Name} for ${damageTakenByP2}`);
-      }
+      // Floating Text UX
+      this.spawnFloatingText('player1', `-${dmgTakenByP1}`, p2Crit ? 'crit' : 'damage');
+      this.spawnFloatingText('player2', `-${dmgTakenByP2}`, p1Crit ? 'crit' : 'damage');
 
-      if (p2Crit) {
-        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p2Name} hits ${p1Name} for ${damageTakenByP1}!!</span>`);
-      } else {
-        this.createLog(`${p2Name} hits ${p1Name} for ${damageTakenByP1}`);
-      }
+      // Logs
+      if (p1Crit)
+        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p1Name} hits ${p2Name} for ${dmgTakenByP2}!!</span>`);
+      else this.createLog(`${p1Name} hits ${p2Name} for ${dmgTakenByP2}`);
+
+      if (p2Crit)
+        this.createLog(`<span class="log-crit">💥 CRITICAL! ${p2Name} hits ${p1Name} for ${dmgTakenByP1}!!</span>`);
+      else this.createLog(`${p2Name} hits ${p1Name} for ${dmgTakenByP1}`);
 
       if (this.determineTheWinner()) return;
       this.determineTheWinner();
@@ -237,28 +248,31 @@ const app = new Vue({
       const p1Name = this.selectedPlayer.player1.name;
       const p2Name = this.selectedPlayer.player2.name;
 
-      const damageTakenByP1 = this.calcDamage(15, 30);
-      const damageTakenByP2 = this.calcDamage(15, 30);
+      const dmgTakenByP1 = this.calcDamage(15, 30);
+      const dmgTakenByP2 = this.calcDamage(15, 30);
 
-      // 20% Chance to Miss
       const p1Miss = Math.random() < 0.2;
       const p2Miss = Math.random() < 0.2;
 
       // P1 Attacks P2
       if (!p1Miss) {
-        this.health.player2 -= damageTakenByP2;
+        this.health.player2 -= dmgTakenByP2;
         this.triggerVisualEffect('player2');
-        this.createLog(`✨ ${p1Name} BLASTS ${p2Name} for ${damageTakenByP2}`);
+        this.spawnFloatingText('player2', `-${dmgTakenByP2}`, 'special');
+        this.createLog(`✨ ${p1Name} BLASTS ${p2Name} for ${dmgTakenByP2}`);
       } else {
+        this.spawnFloatingText('player2', `MISS`, 'miss');
         this.createLog(`<span class="log-miss">💨 ${p1Name} used Special Attack but MISSED!</span>`);
       }
 
       // P2 Attacks P1
       if (!p2Miss) {
-        this.health.player1 -= damageTakenByP1;
+        this.health.player1 -= dmgTakenByP1;
         this.triggerVisualEffect('player1');
-        this.createLog(`✨ ${p2Name} BLASTS ${p1Name} for ${damageTakenByP1}`);
+        this.spawnFloatingText('player1', `-${dmgTakenByP1}`, 'special');
+        this.createLog(`✨ ${p2Name} BLASTS ${p1Name} for ${dmgTakenByP1}`);
       } else {
+        this.spawnFloatingText('player1', `MISS`, 'miss');
         this.createLog(`<span class="log-miss">💨 ${p2Name} used Special Attack but MISSED!</span>`);
       }
 
@@ -267,25 +281,24 @@ const app = new Vue({
     },
 
     heal() {
-      // Check limits
       if (this.tracker.heal >= this.limit.heal) return;
 
       this.tracker.heal++;
-
       const p1Name = this.selectedPlayer.player1.name;
       const p2Name = this.selectedPlayer.player2.name;
 
-      // Dynamic healing (10 to 25)
       const healP1 = Math.floor(Math.random() * 15) + 10;
       const healP2 = Math.floor(Math.random() * 15) + 10;
 
-      // Apply Heal P1
       this.health.player1 += healP1;
       if (this.health.player1 > 100) this.health.player1 = 100;
 
-      // Apply Heal P2
       this.health.player2 += healP2;
       if (this.health.player2 > 100) this.health.player2 = 100;
+
+      // Floating Text UX
+      this.spawnFloatingText('player1', `+${healP1}`, 'heal');
+      this.spawnFloatingText('player2', `+${healP2}`, 'heal');
 
       this.createLog(`💚 ${p1Name} heals for ${healP1}`);
       this.createLog(`💚 ${p2Name} heals for ${healP2}`);
@@ -296,7 +309,6 @@ const app = new Vue({
       giveUpDialogBackdrop.className = 'give-up-dialog-backdrop';
       document.getElementById('give-up-dialog').setAttribute('open', 'true');
       document.body.appendChild(giveUpDialogBackdrop);
-
       giveUpDialogBackdrop.addEventListener('click', () => {
         this.hideDialogGiveUp();
       });
@@ -305,7 +317,6 @@ const app = new Vue({
     hideDialogGiveUp() {
       const dialog = document.getElementById('give-up-dialog');
       const backdrop = document.querySelector('.give-up-dialog-backdrop');
-
       if (dialog) dialog.removeAttribute('open');
       if (backdrop) backdrop.remove();
     },
