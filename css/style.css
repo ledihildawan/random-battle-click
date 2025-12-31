@@ -88,7 +88,7 @@ body {
 /* === CHARACTER GRID === */
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr); /* 5 Columns for desktop */
+  grid-template-columns: repeat(5, 1fr);
   gap: 15px;
   margin: 20px 0;
 }
@@ -108,7 +108,6 @@ body {
   border-color: #209cee;
 }
 
-/* Keyboard Focus State */
 .char-card.focused {
   border-color: #209cee;
   transform: scale(1.1);
@@ -123,7 +122,6 @@ body {
   box-shadow: 0 0 10px #f7d51d;
 }
 
-/* SECRET CHARACTER STYLES */
 .char-card.is-secret {
   background: #000;
   color: #f7d51d;
@@ -285,7 +283,6 @@ body {
   transition: all 0.1s;
 }
 
-/* Keyboard Focus for Battle Buttons */
 .actions__btn.focused,
 .nes-btn.focused {
   border: 4px solid #f7d51d;
