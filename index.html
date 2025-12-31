@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle Arcade: Ultimate</title>
+    <title>Retro Battle Arcade: Keyboard Edition</title>
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
@@ -18,7 +18,6 @@
           <div class="nes-container is-dark with-title is-centered">
             <p class="title">Insert Coin</p>
             <p style="margin-bottom: 20px">Can you defeat the CPU?</p>
-
             <button
               type="button"
               class="nes-btn is-primary blink-anim"
@@ -28,21 +27,26 @@
               PRESS START <span class="key-hint">[ENTER]</span>
             </button>
           </div>
-
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v3.0 Ultimate Edition</div>
+          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v4.0 Keyboard Edition</div>
         </div>
 
         <div v-if="status.selecting" class="screen-select fade-in">
           <div class="nes-container with-title is-centered">
-            <p class="title">Select Your Fighter</p>
+            <p class="title">Select Fighter</p>
+            <p style="font-size: 10px; margin-bottom: 15px">
+              Use <span class="key-hint">[ARROWS]</span> to Move, <span class="key-hint">[ENTER]</span> to Pick
+            </p>
 
             <div class="character-grid">
               <div
-                v-for="player in players"
+                v-for="(player, index) in players"
                 :key="player.id"
                 class="char-card"
-                :class="{ 'selected': tempSelection && tempSelection.id === player.id }"
-                @click="selectPlayer(player)"
+                :class="{ 
+                  'selected': tempSelection && tempSelection.id === player.id,
+                  'focused': focusedCharIndex === index 
+                }"
+                @click="clickSelectPlayer(player, index)"
               >
                 <img :src="`./img/players/${player.avatar}`" :alt="player.name" />
                 <p class="char-name">{{ player.name.split(' ')[0] }}</p>
@@ -50,7 +54,7 @@
             </div>
 
             <div style="margin-top: 20px">
-              <button class="nes-btn" @click="backToTitle">Back</button>
+              <button class="nes-btn" @click="backToTitle">Back <span class="key-hint">[ESC]</span></button>
               <button
                 class="nes-btn is-success"
                 :class="{ 'is-disabled': !tempSelection }"
@@ -66,7 +70,6 @@
         <div v-if="status.loading" class="screen-loading text-center">
           <p style="margin-bottom: 10px">INITIALIZING BATTLE...</p>
           <progress class="nes-progress is-pattern" :value="loadingProgress" max="100"></progress>
-          <p style="font-size: 10px; margin-top: 10px; color: #666">Loading Assets: {{ loadingProgress }}%</p>
         </div>
 
         <div v-if="status.play || status.winner" class="screen-battle fade-in">
@@ -78,7 +81,6 @@
               <span class="identity-badge badge-p1 nes-badge is-splited">
                 <span class="is-dark">P1</span><span class="is-primary">YOU</span>
               </span>
-
               <div class="player__media">
                 <div class="visual-fx-container">
                   <transition-group name="float-up" tag="div">
@@ -94,7 +96,6 @@
                   alt=""
                 />
               </div>
-
               <p class="player__name">{{ selectedPlayer.player1.name }}</p>
               <div class="hp-text">{{ health.player1 }} / 100</div>
               <progress
@@ -103,10 +104,6 @@
                 max="100"
                 :class="healthBarColorStatus(health.player1)"
               ></progress>
-
-              <div style="text-align: center; margin-top: 8px" v-if="stats.win.player1 > 0">
-                <i class="nes-icon trophy is-small"></i> x{{ stats.win.player1 }}
-              </div>
             </div>
 
             <div class="vs-badge">VS</div>
@@ -118,7 +115,6 @@
               <span class="identity-badge badge-p2 nes-badge is-splited">
                 <span class="is-dark">CPU</span><span class="is-error">ENEMY</span>
               </span>
-
               <div class="player__media">
                 <div class="visual-fx-container">
                   <transition-group name="float-up" tag="div">
@@ -134,7 +130,6 @@
                   alt=""
                 />
               </div>
-
               <p class="player__name">{{ selectedPlayer.player2.name }}</p>
               <div class="hp-text">{{ health.player2 }} / 100</div>
               <progress
@@ -143,10 +138,6 @@
                 max="100"
                 :class="healthBarColorStatus(health.player2)"
               ></progress>
-
-              <div style="text-align: center; margin-top: 8px" v-if="stats.win.player2 > 0">
-                <i class="nes-icon trophy is-small"></i> x{{ stats.win.player2 }}
-              </div>
             </div>
           </div>
 
@@ -162,9 +153,7 @@
                   @click="playerAttack('normal')"
                 >
                   <div>🗡️ Attack <span class="key-hint">[1]</span></div>
-                  <div class="btn-subtext">3-10 Dmg</div>
                 </button>
-
                 <button
                   type="button"
                   class="nes-btn is-warning actions__btn"
@@ -172,9 +161,7 @@
                   @click="playerAttack('special')"
                 >
                   <div>✨ Special <span class="key-hint">[2]</span></div>
-                  <div class="btn-subtext">10-25 Dmg | Risk</div>
                 </button>
-
                 <button
                   type="button"
                   class="nes-btn is-success actions__btn"
@@ -182,21 +169,20 @@
                   @click="playerHeal"
                 >
                   <div>💊 Heal ({{ limit.heal - tracker.playerHeal }}) <span class="key-hint">[3]</span></div>
-                  <div class="btn-subtext">+10-25 HP</div>
                 </button>
               </div>
 
               <div class="combat-buttons" v-else>
                 <button class="nes-btn is-primary" @click="goToSelectScreen">
-                  ⚔️ New Fighter <span class="key-hint">[ENTER]</span>
+                  New Fighter <span class="key-hint">[ENTER]</span>
                 </button>
-                <button class="nes-btn" @click="reBattle">🔄 Rematch</button>
-                <button class="nes-btn is-error" @click="backToTitle">Exit</button>
+                <button class="nes-btn" @click="reBattle">Rematch <span class="key-hint">[R]</span></button>
+                <button class="nes-btn is-error" @click="backToTitle">Exit <span class="key-hint">[ESC]</span></button>
               </div>
 
               <div v-if="!status.winner">
                 <button class="nes-btn is-small" @click="showDialogGiveUp" style="margin-top: 10px; opacity: 0.7">
-                  🏳️ Surrender
+                  Give Up <span class="key-hint">[ESC]</span>
                 </button>
               </div>
             </div>
@@ -219,8 +205,10 @@
           <p class="title">Surrender?</p>
           <p>Retreat now?</p>
           <menu class="dialog-menu">
-            <button class="nes-btn" @click.prevent="hideDialogGiveUp">Cancel</button>
-            <button class="nes-btn is-error" @click="giveUp">Confirm</button>
+            <button class="nes-btn" @click.prevent="hideDialogGiveUp">
+              Cancel <span class="key-hint">[ESC]</span>
+            </button>
+            <button class="nes-btn is-error" @click="giveUp">Confirm <span class="key-hint">[ENTER]</span></button>
           </menu>
         </form>
       </dialog>

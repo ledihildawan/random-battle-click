@@ -27,7 +27,6 @@ body {
   transition: transform 0.1s;
 }
 
-/* Global Screen Shake (for Critical Hits) */
 .shake-screen {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -57,25 +56,19 @@ body {
   }
 }
 
-/* === KEYBOARD HINTS & TOOLTIPS === */
+/* KEY HINTS */
 .key-hint {
   font-size: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2px 4px;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 3px 5px;
+  border-radius: 4px;
   margin-left: 5px;
   vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.btn-subtext {
-  font-size: 8px;
-  opacity: 0.8;
-  margin-top: 4px;
-  font-weight: normal;
-  text-transform: none;
-}
-
-/* === CHARACTER SELECTION GRID === */
+/* CHARACTER SELECTION */
 .character-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -89,13 +82,21 @@ body {
   padding: 10px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s;
+  transition: all 0.1s; /* Faster for keyboard response */
   color: #000;
 }
 
 .char-card:hover {
   transform: translateY(-5px);
   border-color: #209cee;
+}
+
+/* Keyboard Focus State - CRITICAL */
+.char-card.focused {
+  border-color: #209cee;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px #209cee;
+  z-index: 10;
 }
 
 .char-card.selected {
@@ -118,7 +119,7 @@ body {
   margin: 0;
 }
 
-/* === BATTLE ARENA === */
+/* BATTLE STYLES */
 .players {
   display: flex;
   justify-content: space-between;
@@ -136,7 +137,6 @@ body {
   width: 45%;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
   transition: transform 0.2s;
-  cursor: crosshair; /* UX: Shows you can target them */
 }
 
 .player-card.active-turn {
@@ -212,7 +212,7 @@ body {
   box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
-/* === CONTROLS === */
+/* CONTROLS */
 .control-panel {
   background: #fff;
   color: #000;
@@ -236,7 +236,7 @@ body {
 }
 
 .actions__btn {
-  width: 150px; /* Slightly wider for subtext */
+  width: 150px;
   font-size: 12px;
   display: flex;
   flex-direction: column;
@@ -247,12 +247,11 @@ body {
 
 .is-disabled {
   opacity: 0.5;
-  cursor: not-allowed !important;
   filter: grayscale(100%);
   pointer-events: none;
 }
 
-/* === LOGS === */
+/* LOGS */
 .logs-container {
   margin-bottom: 40px;
 }
@@ -279,7 +278,7 @@ body {
   background: #33ff00;
 }
 
-/* === ANIMATIONS & FX === */
+/* ANIMATIONS */
 .visual-fx-container {
   position: absolute;
   top: 0;
@@ -288,7 +287,6 @@ body {
   height: 100%;
   pointer-events: none;
 }
-
 .blink-anim {
   animation: blink 1.5s infinite;
 }
@@ -303,7 +301,6 @@ body {
     opacity: 1;
   }
 }
-
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -326,12 +323,10 @@ body {
     transform: translate3d(4px, 0, 0);
   }
 }
-
 .hit-flash {
   filter: sepia(100%) saturate(300%) hue-rotate(-50deg) brightness(1.5);
   transition: filter 0.1s;
 }
-
 .floating-text {
   position: absolute;
   top: 0;
@@ -361,7 +356,6 @@ body {
 .floating-text.miss {
   color: #aaa;
 }
-
 .float-up-enter-active {
   transition: all 0.8s ease-out;
 }
@@ -374,7 +368,6 @@ body {
   transform: translate(-50%, -50px);
 }
 
-/* Confetti FX */
 #confetti-container {
   position: fixed;
   top: 0;
@@ -397,7 +390,6 @@ body {
   }
 }
 
-/* Responsive */
 @media (max-width: 600px) {
   .players {
     flex-direction: column;
@@ -421,7 +413,6 @@ body {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-
 .give-up-dialog {
   top: 50%;
   left: 50%;
