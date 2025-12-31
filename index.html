@@ -3,16 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle Arcade</title>
+    <title>Retro Battle Arcade: Ultimate</title>
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
     <div id="app" v-cloak>
-      <div class="container">
+      <div id="confetti-container"></div>
+
+      <div class="container" :class="{ 'shake-screen': globalShake }">
         <h1 class="main-title">RETRO BATTLE</h1>
 
-        <div v-if="isTitleScreen" class="screen-title text-center">
+        <div v-if="isTitleScreen" class="screen-title text-center fade-in">
           <div class="nes-container is-dark with-title is-centered">
             <p class="title">Insert Coin</p>
             <p style="margin-bottom: 20px">Can you defeat the CPU?</p>
@@ -23,14 +25,14 @@
               style="font-size: 20px; width: 100%"
               @click="goToSelectScreen"
             >
-              PRESS START
+              PRESS START <span class="key-hint">[ENTER]</span>
             </button>
           </div>
 
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v2.0 Ultimate Edition</div>
+          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v3.0 Ultimate Edition</div>
         </div>
 
-        <div v-if="status.selecting" class="screen-select">
+        <div v-if="status.selecting" class="screen-select fade-in">
           <div class="nes-container with-title is-centered">
             <p class="title">Select Your Fighter</p>
 
@@ -55,7 +57,7 @@
                 :disabled="!tempSelection"
                 @click="confirmSelection"
               >
-                CONFIRM FIGHTER
+                CONFIRM <span class="key-hint" v-if="tempSelection">[ENTER]</span>
               </button>
             </div>
           </div>
@@ -67,7 +69,7 @@
           <p style="font-size: 10px; margin-top: 10px; color: #666">Loading Assets: {{ loadingProgress }}%</p>
         </div>
 
-        <div v-if="status.play || status.winner" class="screen-battle">
+        <div v-if="status.play || status.winner" class="screen-battle fade-in">
           <div class="players">
             <div
               class="player-card nes-container is-rounded"
@@ -159,28 +161,35 @@
                   :class="{ 'is-disabled': turnInProgress }"
                   @click="playerAttack('normal')"
                 >
-                  🗡️ Attack
+                  <div>🗡️ Attack <span class="key-hint">[1]</span></div>
+                  <div class="btn-subtext">3-10 Dmg</div>
                 </button>
+
                 <button
                   type="button"
                   class="nes-btn is-warning actions__btn"
                   :class="{ 'is-disabled': turnInProgress }"
                   @click="playerAttack('special')"
                 >
-                  ✨ Special
+                  <div>✨ Special <span class="key-hint">[2]</span></div>
+                  <div class="btn-subtext">10-25 Dmg | Risk</div>
                 </button>
+
                 <button
                   type="button"
                   class="nes-btn is-success actions__btn"
                   :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress }"
                   @click="playerHeal"
                 >
-                  💊 Heal ({{ limit.heal - tracker.playerHeal }})
+                  <div>💊 Heal ({{ limit.heal - tracker.playerHeal }}) <span class="key-hint">[3]</span></div>
+                  <div class="btn-subtext">+10-25 HP</div>
                 </button>
               </div>
 
               <div class="combat-buttons" v-else>
-                <button class="nes-btn is-primary" @click="goToSelectScreen">⚔️ New Fighter</button>
+                <button class="nes-btn is-primary" @click="goToSelectScreen">
+                  ⚔️ New Fighter <span class="key-hint">[ENTER]</span>
+                </button>
                 <button class="nes-btn" @click="reBattle">🔄 Rematch</button>
                 <button class="nes-btn is-error" @click="backToTitle">Exit</button>
               </div>

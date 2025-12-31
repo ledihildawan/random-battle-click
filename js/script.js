@@ -27,17 +27,18 @@ const app = new Vue({
       },
       activeFx: { player1: [], player2: [] },
       status: {
-        selecting: false, // New State
-        loading: false, // New State
+        selecting: false,
+        loading: false,
         play: false,
         winner: false,
         giveUp: false,
       },
-      // Temp variable for the selection screen
       tempSelection: null,
       loadingProgress: 0,
 
       turnInProgress: false,
+      globalShake: false, // For critical hits
+
       limit: { heal: 3 },
       tracker: { playerHeal: 0, enemyHeal: 0 },
       stats: { win: { player1: 0, player2: 0 } },
@@ -51,26 +52,44 @@ const app = new Vue({
     },
   },
 
-  methods: {
-    // --- NAVIGATION & FLOW ---
+  // === UX UPGRADE: KEYBOARD LISTENER ===
+  mounted() {
+    window.addEventListener('keydown', this.handleKeydown);
+  },
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.handleKeydown);
+  },
 
-    // 1. Go to Select Screen
+  methods: {
+    // --- KEYBOARD CONTROLS ---
+    handleKeydown(e) {
+      if (this.status.play && !this.status.winner && !this.turnInProgress) {
+        if (e.key === '1') this.playerAttack('normal');
+        if (e.key === '2') this.playerAttack('special');
+        if (e.key === '3') this.playerHeal();
+      }
+
+      if (e.key === 'Enter') {
+        if (this.isTitleScreen) this.goToSelectScreen();
+        else if (this.status.selecting && this.tempSelection) this.confirmSelection();
+        else if (this.status.winner) this.goToSelectScreen();
+      }
+    },
+
+    // --- NAVIGATION ---
     goToSelectScreen() {
       this.status.selecting = true;
       this.status.play = false;
       this.status.winner = false;
-      this.tempSelection = null; // Reset selection
+      this.tempSelection = null;
     },
 
-    // 2. Select a character in grid
     selectPlayer(player) {
       this.tempSelection = player;
     },
 
-    // 3. Confirm Selection and start Loading
     confirmSelection() {
       if (!this.tempSelection) return;
-
       this.selectedPlayer.player1 = { ...this.tempSelection };
       this.status.selecting = false;
       this.startLoading();
@@ -83,13 +102,11 @@ const app = new Vue({
       this.status.loading = false;
     },
 
-    // 4. Fake Loading Sequence
     startLoading() {
       this.status.loading = true;
       this.loadingProgress = 0;
-
       const interval = setInterval(() => {
-        this.loadingProgress += 5; // increment speed
+        this.loadingProgress += 5;
         if (this.loadingProgress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
@@ -97,20 +114,16 @@ const app = new Vue({
             this.startNewBattle();
           }, 500);
         }
-      }, 50); // Speed of loading bar
+      }, 50);
     },
 
-    // 5. Initialize Battle
     startNewBattle() {
-      // Pick random opponent (not same as player)
       let opponent;
       do {
         opponent = this.players[Math.floor(Math.random() * this.players.length)];
       } while (opponent.id === this.selectedPlayer.player1.id);
 
       this.selectedPlayer.player2 = opponent;
-
-      // Reset Battle Stats
       this.status.play = true;
       this.status.winner = false;
       this.health.player1 = 100;
@@ -119,10 +132,10 @@ const app = new Vue({
       this.tracker.enemyHeal = 0;
       this.logs = [];
       this.activeFx = { player1: [], player2: [] };
+      this.clearConfetti();
 
       this.createLog('System Initialized. Battle Start!');
 
-      // Coin Toss Initiative
       const playerStarts = Math.random() < 0.5;
       if (playerStarts) {
         this.turnInProgress = false;
@@ -136,13 +149,12 @@ const app = new Vue({
       }
     },
 
-    // Rematch button (skips selection)
     reBattle() {
       this.status.winner = false;
       this.startLoading();
     },
 
-    // --- GAMEPLAY LOGIC (Same as before) ---
+    // --- GAME LOGIC ---
 
     checkWinner() {
       if (this.health.player2 <= 0) {
@@ -152,6 +164,7 @@ const app = new Vue({
         this.createLog(
           `<span style="color:#209cee; font-weight:bold;">🏆 VICTORY! You defeated ${this.selectedPlayer.player2.name}!</span>`
         );
+        this.spawnConfetti(); // JUICE: WINNER CONFETTI
         this.gameOver();
         return true;
       }
@@ -159,9 +172,7 @@ const app = new Vue({
         this.health.player1 = 0;
         this.selectedPlayer.player2.name = `👑 ${this.selectedPlayer.player2.name}`;
         this.stats.win.player2 += 1;
-        this.createLog(
-          `<span style="color:#e76e55; font-weight:bold;">💀 DEFEAT! You were eliminated by ${this.selectedPlayer.player2.name}.</span>`
-        );
+        this.createLog(`<span style="color:#e76e55; font-weight:bold;">💀 DEFEAT! You were eliminated.</span>`);
         this.gameOver();
         return true;
       }
@@ -199,6 +210,14 @@ const app = new Vue({
       }
     },
 
+    // JUICE: Global screen shake on crit
+    triggerGlobalShake() {
+      this.globalShake = true;
+      setTimeout(() => {
+        this.globalShake = false;
+      }, 500);
+    },
+
     spawnFloatingText(targetPlayer, text, type) {
       const id = Date.now() + Math.random();
       this.activeFx[targetPlayer].push({ id, text, type });
@@ -206,6 +225,27 @@ const app = new Vue({
         this.activeFx[targetPlayer] = this.activeFx[targetPlayer].filter((fx) => fx.id !== id);
       }, 1000);
     },
+
+    // JUICE: Confetti Generator
+    spawnConfetti() {
+      const container = document.getElementById('confetti-container');
+      const colors = ['#f7d51d', '#e76e55', '#209cee', '#92cc41'];
+      for (let i = 0; i < 50; i++) {
+        const div = document.createElement('div');
+        div.className = 'confetti';
+        div.style.left = Math.random() * 100 + 'vw';
+        div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        div.style.animationDuration = Math.random() * 3 + 2 + 's';
+        container.appendChild(div);
+      }
+    },
+
+    clearConfetti() {
+      const container = document.getElementById('confetti-container');
+      container.innerHTML = '';
+    },
+
+    // --- BATTLE ACTIONS ---
 
     playerAttack(type) {
       if (this.turnInProgress) return;
@@ -240,17 +280,19 @@ const app = new Vue({
           this.createLog(`✨ <span style="color:#f7d51d">SPECIAL!</span> You blasted ${p2Name} for ${damage} DMG!`);
         } else {
           this.spawnFloatingText('player2', `-${damage}`, isCrit ? 'crit' : 'damage');
-          if (isCrit)
-            this.createLog(`<span style="color:#e76e55">💥 CRITICAL HIT!</span> You dealt ${damage} DMG to ${p2Name}!`);
-          else this.createLog(`🗡️ You hit ${p2Name} for ${damage} DMG.`);
+          if (isCrit) {
+            this.createLog(`<span style="color:#e76e55">💥 CRITICAL HIT!</span> You dealt ${damage} DMG!`);
+            this.triggerGlobalShake(); // Shake screen on crit
+          } else {
+            this.createLog(`🗡️ You hit ${p2Name} for ${damage} DMG.`);
+          }
         }
       }
 
-      if (!this.checkWinner()) {
+      if (!this.checkWinner())
         setTimeout(() => {
           this.enemyTurn();
         }, 1200);
-      }
     },
 
     playerHeal() {
@@ -313,9 +355,12 @@ const app = new Vue({
             this.createLog(`✨ ${p2Name} used <span style="color:#f7d51d">SPECIAL ATTACK</span> for ${damage} DMG!`);
           } else {
             this.spawnFloatingText('player1', `-${damage}`, isCrit ? 'crit' : 'damage');
-            if (isCrit)
+            if (isCrit) {
               this.createLog(`<span style="color:#e76e55">⚠️ CRITICAL HIT!</span> ${p2Name} hit you for ${damage}!`);
-            else this.createLog(`🛡️ ${p2Name} attacks! You took ${damage} damage.`);
+              this.triggerGlobalShake();
+            } else {
+              this.createLog(`🛡️ ${p2Name} attacks! You took ${damage} damage.`);
+            }
           }
         }
       }
