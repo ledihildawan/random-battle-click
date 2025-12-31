@@ -16,7 +16,7 @@ body {
   background-size: 20px 20px;
   color: #fff;
 
-  /* CENTER CENTRIC MAGIC */
+  /* CENTER CENTRIC FLEXBOX MAGIC */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -27,12 +27,12 @@ body {
 /* NO SELECT EXPERIENCE (APP FEEL) */
 * {
   user-select: none;
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* IE10+/Edge */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-/* Allow text selection only in logs if user really wants to copy */
+/* Allow text selection only in logs */
 .logs-terminal p {
   user-select: text;
 }
@@ -47,44 +47,130 @@ body {
   margin: 0 auto;
   position: relative;
   transition: transform 0.1s;
-  /* Ensure container doesn't overflow vertically on small screens */
   padding: 20px 0;
 }
 
-/* SPLASH SCREEN STYLES */
+/* === ULTIMATE RETRO SPLASH SCREEN === */
 .splash-screen {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #000;
+  background-color: #050505;
   z-index: 10000;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.splash-screen::before {
+  content: ' ';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+.splash-content {
+  position: relative;
+  z-index: 3;
+  text-align: center;
 }
 
 .splash-logo {
-  font-size: 40px;
+  font-size: 48px;
   color: #fff;
-  text-shadow: 4px 4px 0 #209cee;
-  text-align: center;
-  margin-bottom: 20px;
-  letter-spacing: 5px;
+  text-transform: uppercase;
+  text-shadow: 4px 4px 0px #209cee;
+  animation: glitch-skew 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+}
+
+.splash-sub {
+  color: #f7d51d;
+  margin-top: 20px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0px #000;
+}
+
+.splash-loader-box {
+  width: 300px;
+  height: 20px;
+  border: 4px solid #fff;
+  margin-top: 30px;
+  padding: 2px;
+  position: relative;
+  box-shadow: 4px 4px 0px #000;
+}
+.splash-loader-bar {
+  height: 100%;
+  background-color: #209cee;
+  width: 0%;
+  animation: loadProgress 2.5s ease-in-out forwards;
+}
+
+@keyframes glitch-skew {
+  0% {
+    transform: skew(0deg);
+  }
+  20% {
+    transform: skew(-2deg);
+  }
+  40% {
+    transform: skew(2deg);
+  }
+  60% {
+    transform: skew(-1deg);
+  }
+  80% {
+    transform: skew(1deg);
+  }
+  100% {
+    transform: skew(0deg);
+  }
+}
+@keyframes loadProgress {
+  0% {
+    width: 0%;
+  }
+  20% {
+    width: 10%;
+  }
+  40% {
+    width: 40%;
+  }
+  60% {
+    width: 60%;
+  }
+  80% {
+    width: 80%;
+  }
+  100% {
+    width: 100%;
+  }
 }
 
 .fade-slow-enter-active,
 .fade-slow-leave-active {
-  transition: opacity 1.5s;
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
 }
 .fade-slow-enter,
 .fade-slow-leave-to {
   opacity: 0;
+  transform: scale(1.1);
 }
 
-/* Existing Animations */
+/* Standard Animations */
 .shake-screen {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -100,14 +186,6 @@ body {
 }
 .fade-in {
   animation: fadeIn 0.5s;
-}
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter,
-.fade-leave-to {
-  opacity: 0;
 }
 @keyframes fadeIn {
   from {
@@ -353,7 +431,7 @@ body {
   background: #33ff00;
 }
 
-/* FX */
+/* FX & DIALOG */
 .cheat-toast {
   position: fixed;
   top: 20px;
@@ -375,20 +453,6 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-.blink-anim {
-  animation: blink 1.5s infinite;
-}
-@keyframes blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
 }
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
@@ -478,6 +542,43 @@ body {
   }
 }
 
+/* DIALOG CENTERING FIX */
+.give-up-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  z-index: 10000;
+  min-width: 320px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  border: 4px solid #fff;
+}
+.dialog-menu {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 0;
+}
+.give-up-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s ease-out;
+}
+.give-up-dialog .title {
+  margin-bottom: 15px;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 10px;
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .players {
     flex-direction: column;
@@ -501,54 +602,9 @@ body {
     grid-template-columns: repeat(3, 1fr);
   }
   .splash-logo {
-    font-size: 24px;
+    font-size: 28px;
   }
-}
-
-/* === MODAL / DIALOG FIX === */
-
-.give-up-dialog {
-  position: fixed; /* Menggunakan fixed agar tidak terpengaruh scroll */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%); /* Kunci untuk centering sempurna */
-  margin: 0; /* PENTING: Reset margin bawaan browser/<dialog> */
-  z-index: 10000; /* Pastikan di atas segalanya */
-
-  /* Visual Enhancement */
-  min-width: 320px; /* Lebar minimum agar teks tidak sempit */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); /* Bayangan agar terlihat melayang */
-  border: 4px solid #fff; /* Border putih tegas */
-}
-
-/* Menu tombol di dalam dialog */
-.dialog-menu {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-  padding: 0;
-}
-
-/* Backdrop (Layar hitam di belakang modal) */
-.give-up-dialog-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85); /* Lebih gelap agar fokus */
-  z-index: 9999;
-  backdrop-filter: blur(3px); /* Efek blur modern (opsional) */
-
-  /* Animasi Masuk */
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Pastikan judul dialog rapi */
-.give-up-dialog .title {
-  margin-bottom: 15px;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 10px;
-  text-align: center;
+  .splash-loader-box {
+    width: 240px;
+  }
 }

@@ -21,8 +21,7 @@ const app = new Vue({
       health: { player1: 100, player2: 100 },
       activeFx: { player1: [], player2: [] },
 
-      // State Management
-      showSplash: true, // NEW: Start with Splash
+      showSplash: true,
       status: {
         selecting: false,
         loading: false,
@@ -37,6 +36,7 @@ const app = new Vue({
       turnInProgress: false,
       globalShake: false,
       loadingProgress: 0,
+      isDialogOpen: false, // Extra flag for manual dialog handling
 
       // Cheats
       inputBuffer: [],
@@ -63,7 +63,6 @@ const app = new Vue({
 
   computed: {
     isTitleScreen() {
-      // Hanya tampilkan title jika splash sudah selesai
       return (
         !this.showSplash && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
       );
@@ -72,11 +71,10 @@ const app = new Vue({
 
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
-
-    // SPLASH SCREEN TIMER
+    // Splash Timer Matches CSS Animation (2.5s + buffer)
     setTimeout(() => {
       this.showSplash = false;
-    }, 2500); // 2.5 Detik durasi splash
+    }, 3000);
   },
 
   beforeDestroy() {
@@ -89,7 +87,6 @@ const app = new Vue({
       if (this.showSplash || this.status.loading) return;
 
       if (this.isTitleScreen) {
-        // Konami Code Check
         this.inputBuffer.push(e.key);
         if (this.inputBuffer.length > 20) this.inputBuffer.shift();
         const bufferString = this.inputBuffer.slice(-this.konamiCode.length).join(',');
@@ -110,8 +107,8 @@ const app = new Vue({
         return;
       }
 
-      const dialog = document.getElementById('give-up-dialog');
-      if (dialog && dialog.getAttribute('open')) {
+      // Dialog Handling logic (Check visibility)
+      if (this.isDialogOpen) {
         if (e.key === 'Escape') this.hideDialogGiveUp();
         if (e.key === 'Enter') this.giveUp();
         return;
@@ -495,20 +492,17 @@ const app = new Vue({
     },
 
     showDialogGiveUp() {
+      this.isDialogOpen = true;
       const backdrop = document.createElement('div');
       backdrop.className = 'give-up-dialog-backdrop';
       document.getElementById('give-up-dialog').setAttribute('open', 'true');
-      document.body.appendChild(backdrop);
-      backdrop.addEventListener('click', () => {
-        this.hideDialogGiveUp();
-      });
+      // Removed manual backdrop creation logic here because we use v-if in template now
+      // This keeps logic clean
     },
 
     hideDialogGiveUp() {
-      const dialog = document.getElementById('give-up-dialog');
-      const backdrop = document.querySelector('.give-up-dialog-backdrop');
-      if (dialog) dialog.removeAttribute('open');
-      if (backdrop) backdrop.remove();
+      this.isDialogOpen = false;
+      document.getElementById('give-up-dialog').removeAttribute('open');
     },
 
     giveUp() {
@@ -519,6 +513,7 @@ const app = new Vue({
       this.hideDialogGiveUp();
     },
 
+    // FUNCTION IS NOW CORRECTLY INSIDE METHODS
     healthBarColorStatus(value) {
       return {
         'is-primary': value > 50,
