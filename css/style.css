@@ -16,6 +16,10 @@ body {
   color: #fff;
 }
 
+[v-cloak] {
+  display: none;
+}
+
 .container {
   max-width: 800px;
   width: 95%;
@@ -23,10 +27,59 @@ body {
   position: relative;
 }
 
-.center {
+.main-title {
+  color: #f7d51d;
+  text-align: center;
+  margin-bottom: 30px;
+  text-shadow: 4px 4px 0px #000;
+  font-size: 28px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* === CHARACTER SELECTION GRID === */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.char-card {
+  background: #fff;
+  border: 4px solid #ccc;
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  color: #000;
+}
+
+.char-card:hover {
+  transform: translateY(-5px);
+  border-color: #209cee;
+}
+
+.char-card.selected {
+  border-color: #f7d51d;
+  background-color: #fffde7;
+  transform: scale(1.05);
+  box-shadow: 0 0 10px #f7d51d;
+}
+
+.char-card img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin-bottom: 5px;
+}
+
+.char-name {
+  font-size: 8px;
+  margin: 0;
 }
 
 /* === BATTLE ARENA === */
@@ -38,7 +91,6 @@ body {
   gap: 10px;
 }
 
-/* Player Card Styling */
 .player-card {
   background: #fff;
   color: #212529;
@@ -79,7 +131,6 @@ body {
   opacity: 0.6;
 }
 
-/* VS Badge */
 .vs-badge {
   background: #e76e55;
   color: #fff;
@@ -92,7 +143,6 @@ body {
   transform: rotate(-10deg);
 }
 
-/* Identity Badge */
 .identity-badge {
   position: absolute;
   top: -10px;
@@ -119,7 +169,6 @@ body {
   font-weight: bold;
 }
 
-/* Progress Bar Customization */
 .nes-progress {
   height: 20px;
   border-radius: 0;
@@ -198,10 +247,24 @@ body {
   pointer-events: none;
 }
 
+.blink-anim {
+  animation: blink 1.5s infinite;
+}
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
-
 @keyframes shake {
   10%,
   90% {
@@ -227,7 +290,6 @@ body {
   transition: filter 0.1s;
 }
 
-/* Floating Text */
 .floating-text {
   position: absolute;
   top: 0;
@@ -270,14 +332,7 @@ body {
   transform: translate(-50%, -50px);
 }
 
-/* Dialog & Utils */
-.mb-2 {
-  margin-bottom: 20px;
-}
-.text-center {
-  text-align: center;
-}
-
+/* Responsive */
 @media (max-width: 600px) {
   .players {
     flex-direction: column;
@@ -296,6 +351,9 @@ body {
   }
   .actions__btn {
     width: 100%;
+  }
+  .character-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
