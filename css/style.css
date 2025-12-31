@@ -505,18 +505,50 @@ body {
   }
 }
 
+/* === MODAL / DIALOG FIX === */
+
 .give-up-dialog {
+  position: fixed; /* Menggunakan fixed agar tidak terpengaruh scroll */
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 999;
+  transform: translate(-50%, -50%); /* Kunci untuk centering sempurna */
+  margin: 0; /* PENTING: Reset margin bawaan browser/<dialog> */
+  z-index: 10000; /* Pastikan di atas segalanya */
+
+  /* Visual Enhancement */
+  min-width: 320px; /* Lebar minimum agar teks tidak sempit */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); /* Bayangan agar terlihat melayang */
+  border: 4px solid #fff; /* Border putih tegas */
 }
+
+/* Menu tombol di dalam dialog */
+.dialog-menu {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 0;
+}
+
+/* Backdrop (Layar hitam di belakang modal) */
 .give-up-dialog-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 998;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85); /* Lebih gelap agar fokus */
+  z-index: 9999;
+  backdrop-filter: blur(3px); /* Efek blur modern (opsional) */
+
+  /* Animasi Masuk */
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Pastikan judul dialog rapi */
+.give-up-dialog .title {
+  margin-bottom: 15px;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 10px;
+  text-align: center;
 }
