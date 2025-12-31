@@ -5,7 +5,6 @@ const app = new Vue({
 
   data() {
     return {
-      // Data Awal Players
       players: [
         { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg' },
         { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg' },
@@ -30,7 +29,7 @@ const app = new Vue({
       },
       tempSelection: null,
       focusedCharIndex: 0,
-      battleMenuIndex: 0, // 0:Attack, 1:Special, 2:Heal
+      battleMenuIndex: 0,
 
       turnInProgress: false,
       globalShake: false,
@@ -73,9 +72,8 @@ const app = new Vue({
   },
 
   methods: {
-    // === MASTER KEYBOARD CONTROLLER ===
+    // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
-      // 0. CEK CHEAT CODE (Kapanpun di Title Screen)
       if (this.isTitleScreen) {
         this.inputBuffer.push(e.key);
         if (this.inputBuffer.length > this.konamiCode.length) this.inputBuffer.shift();
@@ -86,13 +84,11 @@ const app = new Vue({
 
       if (this.status.loading) return;
 
-      // 1. TITLE SCREEN
       if (this.isTitleScreen) {
         if (e.key === 'Enter') this.goToSelectScreen();
         return;
       }
 
-      // 2. CHARACTER SELECTION (2D NAVIGATION)
       if (this.status.selecting) {
         if (e.key === 'ArrowRight') this.moveGridFocus(1, 0);
         if (e.key === 'ArrowLeft') this.moveGridFocus(-1, 0);
@@ -104,7 +100,6 @@ const app = new Vue({
         return;
       }
 
-      // 3. DIALOG OVERLAY
       const dialog = document.getElementById('give-up-dialog');
       if (dialog && dialog.getAttribute('open')) {
         if (e.key === 'Escape') this.hideDialogGiveUp();
@@ -112,9 +107,7 @@ const app = new Vue({
         return;
       }
 
-      // 4. BATTLE (MENU NAVIGATION)
       if (this.status.play && !this.status.winner && !this.turnInProgress) {
-        // Direct Shortcuts
         if (e.key === '1') {
           this.battleMenuIndex = 0;
           this.executeBattleAction();
@@ -128,16 +121,13 @@ const app = new Vue({
           this.executeBattleAction();
         }
 
-        // Arrow Navigation Menu
         if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
         if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
 
-        // Execute focused
         if (e.key === 'Enter') this.executeBattleAction();
         if (e.key === 'Escape') this.showDialogGiveUp();
       }
 
-      // 5. GAME OVER MENU
       if (this.status.winner) {
         if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
         if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
@@ -150,7 +140,6 @@ const app = new Vue({
       }
     },
 
-    // === LOGIKA NAVIGASI GRID 2D ===
     moveGridFocus(x, y) {
       const cols = window.innerWidth > 600 ? 5 : 3;
       const total = this.players.length;
@@ -179,7 +168,6 @@ const app = new Vue({
       this.tempSelection = this.players[current];
     },
 
-    // === CHEAT CODE ACTION ===
     activateCheat() {
       if (this.cheatActivated) return;
       this.cheatActivated = true;
@@ -194,14 +182,12 @@ const app = new Vue({
       }, 3000);
     },
 
-    // === BATTLE EXECUTION HELPER ===
     executeBattleAction() {
       if (this.battleMenuIndex === 0) this.playerAttack('normal');
       if (this.battleMenuIndex === 1) this.playerAttack('special');
       if (this.battleMenuIndex === 2) this.playerHeal();
     },
 
-    // --- NAVIGATION FUNCTIONS ---
     goToSelectScreen() {
       this.status.selecting = true;
       this.status.play = false;
@@ -283,7 +269,6 @@ const app = new Vue({
       this.startLoading();
     },
 
-    // --- GAME LOGIC ---
     checkWinner() {
       if (this.health.player2 <= 0) {
         this.health.player2 = 0;
@@ -372,7 +357,6 @@ const app = new Vue({
       container.innerHTML = '';
     },
 
-    // ACTIONS
     playerAttack(type) {
       if (this.turnInProgress) return;
       this.turnInProgress = true;
@@ -381,7 +365,6 @@ const app = new Vue({
         isCrit = false,
         isMiss = false;
 
-      // God Mode Damage Boost
       const isGod = this.selectedPlayer.player1.id === 999;
       const multiplier = isGod ? 2 : 1;
 
@@ -523,6 +506,15 @@ const app = new Vue({
       this.status.play = false;
       this.status.winner = true;
       this.hideDialogGiveUp();
+    },
+
+    // --- MISSING FUNCTION ADDED HERE ---
+    healthBarColorStatus(value) {
+      return {
+        'is-primary': value > 50,
+        'is-warning': value > 20 && value <= 50,
+        'is-error': value <= 20,
+      };
     },
   },
 });
