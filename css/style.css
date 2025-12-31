@@ -15,7 +15,6 @@ body {
   color: #fff;
 }
 
-/* Prevents Vue raw curly braces from showing before load */
 [v-cloak] {
   display: none;
 }
@@ -46,6 +45,15 @@ body {
 .fade-in {
   animation: fadeIn 0.5s;
 }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -80,7 +88,7 @@ body {
 /* === CHARACTER GRID === */
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(5, 1fr); /* 5 Columns for desktop */
   gap: 15px;
   margin: 20px 0;
 }
@@ -115,6 +123,28 @@ body {
   box-shadow: 0 0 10px #f7d51d;
 }
 
+/* SECRET CHARACTER STYLES */
+.char-card.is-secret {
+  background: #000;
+  color: #f7d51d;
+  border-color: #f7d51d;
+  animation: glow 1.5s infinite alternate;
+}
+
+.secret-text {
+  color: #f7d51d;
+  text-shadow: 1px 1px 0 #000;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px #f7d51d;
+  }
+  to {
+    box-shadow: 0 0 20px #f7d51d;
+  }
+}
+
 .char-card img {
   width: 100%;
   height: auto;
@@ -128,7 +158,7 @@ body {
   margin: 0;
 }
 
-/* === BATTLE ARENA === */
+/* === BATTLE STYLES === */
 .players {
   display: flex;
   justify-content: space-between;
@@ -252,6 +282,17 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px;
+  transition: all 0.1s;
+}
+
+/* Keyboard Focus for Battle Buttons */
+.actions__btn.focused,
+.nes-btn.focused {
+  border: 4px solid #f7d51d;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 10;
 }
 
 .is-disabled {
@@ -285,6 +326,22 @@ body {
 }
 .logs-terminal::-webkit-scrollbar-thumb {
   background: #33ff00;
+}
+
+/* === CHEAT NOTIFICATION === */
+.cheat-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #209cee;
+  color: #fff;
+  padding: 15px 30px;
+  border: 4px solid #fff;
+  z-index: 9999;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* === ANIMATIONS & FX === */

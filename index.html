@@ -3,13 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle Arcade: Checkpoint</title>
+    <title>Retro Battle: Ultimate Keyboard Edition</title>
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
     <div id="app" v-cloak>
       <div id="confetti-container"></div>
+
+      <transition name="fade">
+        <div v-if="cheatActivated" class="cheat-toast">🔓 SECRET CHARACTER UNLOCKED!</div>
+      </transition>
 
       <div class="container" :class="{ 'shake-screen': globalShake }">
         <h1 class="main-title">RETRO BATTLE</h1>
@@ -18,7 +22,6 @@
           <div class="nes-container is-dark with-title is-centered">
             <p class="title">Insert Coin</p>
             <p style="margin-bottom: 20px">Can you defeat the CPU?</p>
-
             <button
               type="button"
               class="nes-btn is-primary blink-anim"
@@ -29,7 +32,10 @@
             </button>
           </div>
 
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v4.0 Stable Checkpoint</div>
+          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px; line-height: 1.6">
+            v5.0 Ultimate Keyboard Edition<br />
+            Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A
+          </div>
         </div>
 
         <div v-if="status.selecting" class="screen-select fade-in">
@@ -46,7 +52,8 @@
                 class="char-card"
                 :class="{ 
                   'selected': tempSelection && tempSelection.id === player.id,
-                  'focused': focusedCharIndex === index 
+                  'focused': focusedCharIndex === index,
+                  'is-secret': player.isSecret 
                 }"
                 @click="clickSelectPlayer(player, index)"
                 @mouseover="focusedCharIndex = index"
@@ -73,7 +80,7 @@
         <div v-if="status.loading" class="screen-loading text-center">
           <p style="margin-bottom: 10px">INITIALIZING BATTLE...</p>
           <progress class="nes-progress is-pattern" :value="loadingProgress" max="100"></progress>
-          <p style="font-size: 10px; margin-top: 10px; color: #666">Syncing Keyboard Controls...</p>
+          <p style="font-size: 10px; margin-top: 10px; color: #666">Syncing Neural Network...</p>
         </div>
 
         <div v-if="status.play || status.winner" class="screen-battle fade-in">
@@ -102,7 +109,9 @@
                 />
               </div>
 
-              <p class="player__name">{{ selectedPlayer.player1.name }}</p>
+              <p class="player__name" :class="{ 'secret-text': selectedPlayer.player1.isSecret }">
+                {{ selectedPlayer.player1.name }}
+              </p>
               <div class="hp-text">{{ health.player1 }} / 100</div>
               <progress
                 class="nes-progress is-primary"
@@ -165,45 +174,61 @@
                 <button
                   type="button"
                   class="nes-btn is-error actions__btn"
-                  :class="{ 'is-disabled': turnInProgress }"
+                  :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 0 }"
                   @click="playerAttack('normal')"
+                  @mouseover="battleMenuIndex = 0"
                 >
                   <div>🗡️ Attack <span class="key-hint">[1]</span></div>
-                  <div class="btn-subtext">3-10 Dmg</div>
+                  <div class="btn-subtext">Low Risk</div>
                 </button>
 
                 <button
                   type="button"
                   class="nes-btn is-warning actions__btn"
-                  :class="{ 'is-disabled': turnInProgress }"
+                  :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 1 }"
                   @click="playerAttack('special')"
+                  @mouseover="battleMenuIndex = 1"
                 >
                   <div>✨ Special <span class="key-hint">[2]</span></div>
-                  <div class="btn-subtext">10-25 Dmg | Risk</div>
+                  <div class="btn-subtext">High Risk</div>
                 </button>
 
                 <button
                   type="button"
                   class="nes-btn is-success actions__btn"
-                  :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress }"
+                  :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress, 'focused': battleMenuIndex === 2 }"
                   @click="playerHeal"
+                  @mouseover="battleMenuIndex = 2"
                 >
-                  <div>💊 Heal ({{ limit.heal - tracker.playerHeal }}) <span class="key-hint">[3]</span></div>
-                  <div class="btn-subtext">+10-25 HP</div>
+                  <div>💊 Heal <span class="key-hint">[3]</span></div>
+                  <div class="btn-subtext">{{ limit.heal - tracker.playerHeal }} Left</div>
                 </button>
               </div>
 
               <div class="combat-buttons" v-else>
-                <button class="nes-btn is-primary" @click="goToSelectScreen">
-                  ⚔️ New Fighter <span class="key-hint">[ENTER]</span>
+                <button
+                  class="nes-btn is-primary"
+                  :class="{'focused': battleMenuIndex === 0}"
+                  @click="goToSelectScreen"
+                  @mouseover="battleMenuIndex=0"
+                >
+                  New Fighter <span class="key-hint">[ENTER]</span>
                 </button>
-                <button class="nes-btn" @click="reBattle">🔄 Rematch <span class="key-hint">[R]</span></button>
-                <button class="nes-btn is-error" @click="backToTitle">Exit <span class="key-hint">[ESC]</span></button>
-              </div>
-
-              <div v-if="!status.winner">
-                <button class="nes-btn is-small" @click="showDialogGiveUp" style="margin-top: 10px; opacity: 0.7">
-                  🏳️ Surrender <span class="key-hint">[ESC]</span>
+                <button
+                  class="nes-btn"
+                  :class="{'focused': battleMenuIndex === 1}"
+                  @click="reBattle"
+                  @mouseover="battleMenuIndex=1"
+                >
+                  Rematch <span class="key-hint">[R]</span>
+                </button>
+                <button
+                  class="nes-btn is-error"
+                  :class="{'focused': battleMenuIndex === 2}"
+                  @click="backToTitle"
+                  @mouseover="battleMenuIndex=2"
+                >
+                  Exit <span class="key-hint">[ESC]</span>
                 </button>
               </div>
             </div>
@@ -214,7 +239,7 @@
               <p class="title">Battle Log</p>
               <div class="logs-terminal">
                 <p v-for="(log, index) in logs" :key="index" v-html="`> ` + log"></p>
-                <p v-if="logs.length === 0">Waiting for input...</p>
+                <p v-if="logs.length === 0">Waiting for command... [ARROWS] to Select, [ENTER] to Execute.</p>
               </div>
             </div>
           </div>
@@ -224,7 +249,7 @@
       <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
         <form method="dialog">
           <p class="title">Surrender?</p>
-          <p>Retreat now?</p>
+          <p>Run away?</p>
           <menu class="dialog-menu">
             <button class="nes-btn" @click.prevent="hideDialogGiveUp">
               Cancel <span class="key-hint">[ESC]</span>
