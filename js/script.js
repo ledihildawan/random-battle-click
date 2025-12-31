@@ -5,6 +5,7 @@ const app = new Vue({
 
   data() {
     return {
+      // Data Awal Players
       players: [
         { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg' },
         { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg' },
@@ -17,10 +18,7 @@ const app = new Vue({
         { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg' },
         { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg' },
       ],
-      selectedPlayer: {
-        player1: { id: null, name: '', avatar: '' },
-        player2: { id: null, name: '', avatar: '' },
-      },
+      selectedPlayer: { player1: {}, player2: {} },
       health: { player1: 100, player2: 100 },
       activeFx: { player1: [], player2: [] },
       status: {
@@ -32,10 +30,27 @@ const app = new Vue({
       },
       tempSelection: null,
       focusedCharIndex: 0,
-      loadingProgress: 0,
+      battleMenuIndex: 0, // 0:Attack, 1:Special, 2:Heal
 
       turnInProgress: false,
       globalShake: false,
+      loadingProgress: 0,
+
+      // Konami Code Variables
+      inputBuffer: [],
+      konamiCode: [
+        'ArrowUp',
+        'ArrowUp',
+        'ArrowDown',
+        'ArrowDown',
+        'ArrowLeft',
+        'ArrowRight',
+        'ArrowLeft',
+        'ArrowRight',
+        'b',
+        'a',
+      ],
+      cheatActivated: false,
 
       limit: { heal: 3 },
       tracker: { playerHeal: 0, enemyHeal: 0 },
@@ -58,8 +73,17 @@ const app = new Vue({
   },
 
   methods: {
-    // === KEYBOARD CONTROL ===
+    // === MASTER KEYBOARD CONTROLLER ===
     handleKeydown(e) {
+      // 0. CEK CHEAT CODE (Kapanpun di Title Screen)
+      if (this.isTitleScreen) {
+        this.inputBuffer.push(e.key);
+        if (this.inputBuffer.length > this.konamiCode.length) this.inputBuffer.shift();
+        if (JSON.stringify(this.inputBuffer) === JSON.stringify(this.konamiCode)) {
+          this.activateCheat();
+        }
+      }
+
       if (this.status.loading) return;
 
       // 1. TITLE SCREEN
@@ -68,10 +92,13 @@ const app = new Vue({
         return;
       }
 
-      // 2. CHARACTER SELECTION
+      // 2. CHARACTER SELECTION (2D NAVIGATION)
       if (this.status.selecting) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') this.moveFocus(1);
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') this.moveFocus(-1);
+        if (e.key === 'ArrowRight') this.moveGridFocus(1, 0);
+        if (e.key === 'ArrowLeft') this.moveGridFocus(-1, 0);
+        if (e.key === 'ArrowDown') this.moveGridFocus(0, 1);
+        if (e.key === 'ArrowUp') this.moveGridFocus(0, -1);
+
         if (e.key === 'Enter') this.confirmSelection();
         if (e.key === 'Escape') this.backToTitle();
         return;
@@ -85,31 +112,96 @@ const app = new Vue({
         return;
       }
 
-      // 4. BATTLE
+      // 4. BATTLE (MENU NAVIGATION)
       if (this.status.play && !this.status.winner && !this.turnInProgress) {
-        if (e.key === '1') this.playerAttack('normal');
-        if (e.key === '2') this.playerAttack('special');
-        if (e.key === '3') this.playerHeal();
+        // Direct Shortcuts
+        if (e.key === '1') {
+          this.battleMenuIndex = 0;
+          this.executeBattleAction();
+        }
+        if (e.key === '2') {
+          this.battleMenuIndex = 1;
+          this.executeBattleAction();
+        }
+        if (e.key === '3') {
+          this.battleMenuIndex = 2;
+          this.executeBattleAction();
+        }
+
+        // Arrow Navigation Menu
+        if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
+        if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
+
+        // Execute focused
+        if (e.key === 'Enter') this.executeBattleAction();
         if (e.key === 'Escape') this.showDialogGiveUp();
       }
 
-      // 5. GAME OVER
+      // 5. GAME OVER MENU
       if (this.status.winner) {
-        if (e.key === 'r' || e.key === 'R') this.reBattle();
-        if (e.key === 'Enter') this.goToSelectScreen();
-        if (e.key === 'Escape') this.backToTitle();
+        if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
+        if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
+
+        if (e.key === 'Enter') {
+          if (this.battleMenuIndex === 0) this.goToSelectScreen();
+          if (this.battleMenuIndex === 1) this.reBattle();
+          if (this.battleMenuIndex === 2) this.backToTitle();
+        }
       }
     },
 
-    moveFocus(dir) {
-      let newIndex = this.focusedCharIndex + dir;
-      if (newIndex < 0) newIndex = this.players.length - 1;
-      if (newIndex >= this.players.length) newIndex = 0;
-      this.focusedCharIndex = newIndex;
-      this.tempSelection = this.players[newIndex];
+    // === LOGIKA NAVIGASI GRID 2D ===
+    moveGridFocus(x, y) {
+      const cols = window.innerWidth > 600 ? 5 : 3;
+      const total = this.players.length;
+      let current = this.focusedCharIndex;
+
+      if (x !== 0) {
+        current += x;
+        if (current < 0) current = total - 1;
+        if (current >= total) current = 0;
+      }
+
+      if (y !== 0) {
+        let next = current + y * cols;
+        if (next >= total) next = next % cols;
+        else if (next < 0) {
+          next = total - (cols - (current % cols));
+          if (next >= total) next -= cols;
+        }
+        current = next;
+      }
+
+      if (current < 0) current = 0;
+      if (current >= total) current = total - 1;
+
+      this.focusedCharIndex = current;
+      this.tempSelection = this.players[current];
     },
 
-    // --- NAVIGATION ---
+    // === CHEAT CODE ACTION ===
+    activateCheat() {
+      if (this.cheatActivated) return;
+      this.cheatActivated = true;
+      this.players.push({
+        id: 999,
+        name: 'DEV GOD 👑',
+        avatar: 'player-10.jpg',
+        isSecret: true,
+      });
+      setTimeout(() => {
+        this.cheatActivated = false;
+      }, 3000);
+    },
+
+    // === BATTLE EXECUTION HELPER ===
+    executeBattleAction() {
+      if (this.battleMenuIndex === 0) this.playerAttack('normal');
+      if (this.battleMenuIndex === 1) this.playerAttack('special');
+      if (this.battleMenuIndex === 2) this.playerHeal();
+    },
+
+    // --- NAVIGATION FUNCTIONS ---
     goToSelectScreen() {
       this.status.selecting = true;
       this.status.play = false;
@@ -135,6 +227,7 @@ const app = new Vue({
       this.status.play = false;
       this.status.winner = false;
       this.status.loading = false;
+      this.battleMenuIndex = 0;
     },
 
     startLoading() {
@@ -168,6 +261,7 @@ const app = new Vue({
       this.logs = [];
       this.activeFx = { player1: [], player2: [] };
       this.clearConfetti();
+      this.battleMenuIndex = 0;
 
       this.createLog('System Initialized. Battle Start!');
 
@@ -189,7 +283,7 @@ const app = new Vue({
       this.startLoading();
     },
 
-    // --- LOGIC ---
+    // --- GAME LOGIC ---
     checkWinner() {
       if (this.health.player2 <= 0) {
         this.health.player2 = 0;
@@ -217,6 +311,7 @@ const app = new Vue({
       this.status.play = false;
       this.status.winner = true;
       this.turnInProgress = false;
+      this.battleMenuIndex = 0;
     },
 
     calcDamage(min, max) {
@@ -277,7 +372,7 @@ const app = new Vue({
       container.innerHTML = '';
     },
 
-    // --- ACTIONS ---
+    // ACTIONS
     playerAttack(type) {
       if (this.turnInProgress) return;
       this.turnInProgress = true;
@@ -286,14 +381,18 @@ const app = new Vue({
         isCrit = false,
         isMiss = false;
 
+      // God Mode Damage Boost
+      const isGod = this.selectedPlayer.player1.id === 999;
+      const multiplier = isGod ? 2 : 1;
+
       if (type === 'normal') {
-        damage = this.calcDamage(3, 10);
+        damage = this.calcDamage(3, 10) * multiplier;
         if (Math.random() < 0.15) {
           damage *= 2;
           isCrit = true;
         }
       } else if (type === 'special') {
-        damage = this.calcDamage(10, 25);
+        damage = this.calcDamage(10, 25) * multiplier;
         if (Math.random() < 0.2) {
           damage = 0;
           isMiss = true;
@@ -305,9 +404,7 @@ const app = new Vue({
         this.createLog(`💨 Attack MISSED on ${p2Name}!`);
       } else {
         this.health.player2 -= damage;
-        // CHECKPOINT FIX: Prevent negative numbers
         if (this.health.player2 < 0) this.health.player2 = 0;
-
         this.triggerVisualEffect('player2');
         if (type === 'special') {
           this.spawnFloatingText('player2', `-${damage}`, 'special');
@@ -383,7 +480,6 @@ const app = new Vue({
           this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
         } else {
           this.health.player1 -= damage;
-          // CHECKPOINT FIX: Prevent negative numbers
           if (this.health.player1 < 0) this.health.player1 = 0;
 
           this.triggerVisualEffect('player1');
@@ -427,14 +523,6 @@ const app = new Vue({
       this.status.play = false;
       this.status.winner = true;
       this.hideDialogGiveUp();
-    },
-
-    healthBarColorStatus(value) {
-      return {
-        'is-primary': value > 50,
-        'is-warning': value > 20 && value <= 50,
-        'is-error': value <= 20,
-      };
     },
   },
 });
