@@ -3,19 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle: Final Version</title>
+    <title>Retro Battle: Console Edition</title>
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
     <div id="app" v-cloak>
+      <transition name="fade-slow">
+        <div v-if="showSplash" class="splash-screen">
+          <div class="splash-content">
+            <h1 class="splash-logo">VUE.JS<br />SYSTEMS</h1>
+            <p class="blink-anim">INITIALIZING...</p>
+          </div>
+        </div>
+      </transition>
+
       <div id="confetti-container"></div>
 
       <transition name="fade">
         <div v-if="cheatActivated" class="cheat-toast">🔓 GOD MODE ACTIVATED!</div>
       </transition>
 
-      <div class="container" :class="{ 'shake-screen': globalShake }">
+      <div class="container" :class="{ 'shake-screen': globalShake }" v-show="!showSplash">
         <h1 class="main-title">RETRO BATTLE</h1>
 
         <div v-if="isTitleScreen" class="screen-title text-center fade-in">
@@ -31,7 +40,7 @@
               PRESS START <span class="key-hint">[ENTER]</span>
             </button>
           </div>
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v5.1 Stable Build</div>
+          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v6.0 Console Edition</div>
         </div>
 
         <div v-if="status.selecting" class="screen-select fade-in">
@@ -221,7 +230,7 @@
               <p class="title">Battle Log</p>
               <div class="logs-terminal">
                 <p v-for="(log, index) in logs" :key="index" v-html="`> ` + log"></p>
-                <p v-if="logs.length === 0">Waiting for command... [ARROWS] to Select, [ENTER] to Execute.</p>
+                <p v-if="logs.length === 0">Waiting for command...</p>
               </div>
             </div>
           </div>

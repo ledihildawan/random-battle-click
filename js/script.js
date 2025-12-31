@@ -20,6 +20,9 @@ const app = new Vue({
       selectedPlayer: { player1: {}, player2: {} },
       health: { player1: 100, player2: 100 },
       activeFx: { player1: [], player2: [] },
+
+      // State Management
+      showSplash: true, // NEW: Start with Splash
       status: {
         selecting: false,
         loading: false,
@@ -27,11 +30,10 @@ const app = new Vue({
         winner: false,
         giveUp: false,
       },
+
       tempSelection: null,
       focusedCharIndex: 0,
       battleMenuIndex: 0,
-      battleMenuIndex: 0,
-
       turnInProgress: false,
       globalShake: false,
       loadingProgress: 0,
@@ -61,36 +63,39 @@ const app = new Vue({
 
   computed: {
     isTitleScreen() {
-      return !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner;
+      // Hanya tampilkan title jika splash sudah selesai
+      return (
+        !this.showSplash && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
+      );
     },
   },
 
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
+
+    // SPLASH SCREEN TIMER
+    setTimeout(() => {
+      this.showSplash = false;
+    }, 2500); // 2.5 Detik durasi splash
   },
+
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeydown);
   },
 
   methods: {
-    // --- KEYBOARD LOGIC ---
+    // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
-      if (this.isTitleScreen) {
-        this.inputBuffer.push(e.key);
-        if (this.inputBuffer.length > 20) this.inputBuffer.shift(); // Memory fix
+      if (this.showSplash || this.status.loading) return;
 
-        // Simple array check for Konami Code
+      if (this.isTitleScreen) {
+        // Konami Code Check
+        this.inputBuffer.push(e.key);
+        if (this.inputBuffer.length > 20) this.inputBuffer.shift();
         const bufferString = this.inputBuffer.slice(-this.konamiCode.length).join(',');
         const codeString = this.konamiCode.join(',');
+        if (bufferString === codeString) this.activateCheat();
 
-        if (bufferString === codeString) {
-          this.activateCheat();
-        }
-      }
-
-      if (this.status.loading) return;
-
-      if (this.isTitleScreen) {
         if (e.key === 'Enter') this.goToSelectScreen();
         return;
       }
@@ -100,7 +105,6 @@ const app = new Vue({
         if (e.key === 'ArrowLeft') this.moveGridFocus(-1, 0);
         if (e.key === 'ArrowDown') this.moveGridFocus(0, 1);
         if (e.key === 'ArrowUp') this.moveGridFocus(0, -1);
-
         if (e.key === 'Enter') this.confirmSelection();
         if (e.key === 'Escape') this.backToTitle();
         return;
@@ -194,7 +198,6 @@ const app = new Vue({
       if (this.battleMenuIndex === 2) this.playerHeal();
     },
 
-    // --- NAVIGATION ---
     goToSelectScreen() {
       this.status.selecting = true;
       this.status.play = false;
@@ -314,7 +317,6 @@ const app = new Vue({
       const logsContainer = document.querySelector('.logs-terminal');
       this.logs.push(message);
       if (logsContainer) {
-        // Fix: Use nextTick for reliable scrolling
         this.$nextTick(() => {
           logsContainer.scrollTo({ left: 0, top: logsContainer.scrollHeight, behavior: 'smooth' });
         });
@@ -365,7 +367,6 @@ const app = new Vue({
       container.innerHTML = '';
     },
 
-    // --- ACTIONS ---
     playerAttack(type) {
       if (this.turnInProgress) return;
       this.turnInProgress = true;
@@ -396,7 +397,6 @@ const app = new Vue({
         this.createLog(`💨 Attack MISSED on ${p2Name}!`);
       } else {
         this.health.player2 -= damage;
-        // Fix: Prevent Negative HP
         if (this.health.player2 < 0) this.health.player2 = 0;
 
         this.triggerVisualEffect('player2');
@@ -474,7 +474,6 @@ const app = new Vue({
           this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
         } else {
           this.health.player1 -= damage;
-          // Fix: Prevent Negative HP
           if (this.health.player1 < 0) this.health.player1 = 0;
 
           this.triggerVisualEffect('player1');
@@ -520,7 +519,6 @@ const app = new Vue({
       this.hideDialogGiveUp();
     },
 
-    // --- FIX: FUNCTION RESTORED INSIDE METHODS ---
     healthBarColorStatus(value) {
       return {
         'is-primary': value > 50,
