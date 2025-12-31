@@ -31,7 +31,7 @@ const app = new Vue({
         giveUp: false,
       },
       tempSelection: null,
-      focusedCharIndex: 0, // NEW: Tracks keyboard selection focus
+      focusedCharIndex: 0,
       loadingProgress: 0,
 
       turnInProgress: false,
@@ -58,9 +58,9 @@ const app = new Vue({
   },
 
   methods: {
-    // === KEYBOARD MASTER CONTROLLER ===
+    // === KEYBOARD CONTROL ===
     handleKeydown(e) {
-      if (this.status.loading) return; // Block input during loading
+      if (this.status.loading) return;
 
       // 1. TITLE SCREEN
       if (this.isTitleScreen) {
@@ -77,18 +77,15 @@ const app = new Vue({
         return;
       }
 
-      // 3. DIALOG (Surrender)
-      if (this.status.giveUp) {
-        // Only if using custom logic var, but here we use dialog visibility
-        const dialog = document.getElementById('give-up-dialog');
-        if (dialog && dialog.getAttribute('open')) {
-          if (e.key === 'Escape') this.hideDialogGiveUp();
-          if (e.key === 'Enter') this.giveUp();
-          return;
-        }
+      // 3. DIALOG OVERLAY
+      const dialog = document.getElementById('give-up-dialog');
+      if (dialog && dialog.getAttribute('open')) {
+        if (e.key === 'Escape') this.hideDialogGiveUp();
+        if (e.key === 'Enter') this.giveUp();
+        return;
       }
 
-      // 4. BATTLE STATE
+      // 4. BATTLE
       if (this.status.play && !this.status.winner && !this.turnInProgress) {
         if (e.key === '1') this.playerAttack('normal');
         if (e.key === '2') this.playerAttack('special');
@@ -104,15 +101,11 @@ const app = new Vue({
       }
     },
 
-    // Keyboard Focus Helper
     moveFocus(dir) {
       let newIndex = this.focusedCharIndex + dir;
-      // Wrap around logic
       if (newIndex < 0) newIndex = this.players.length - 1;
       if (newIndex >= this.players.length) newIndex = 0;
-
       this.focusedCharIndex = newIndex;
-      // Auto-select when moving focus (Optional, but good for UX)
       this.tempSelection = this.players[newIndex];
     },
 
@@ -121,11 +114,10 @@ const app = new Vue({
       this.status.selecting = true;
       this.status.play = false;
       this.status.winner = false;
-      this.tempSelection = this.players[0]; // Default Select First
-      this.focusedCharIndex = 0; // Reset Focus
+      this.tempSelection = this.players[0];
+      this.focusedCharIndex = 0;
     },
 
-    // Mouse click support
     clickSelectPlayer(player, index) {
       this.tempSelection = player;
       this.focusedCharIndex = index;
@@ -197,8 +189,7 @@ const app = new Vue({
       this.startLoading();
     },
 
-    // --- GAME LOGIC ---
-
+    // --- LOGIC ---
     checkWinner() {
       if (this.health.player2 <= 0) {
         this.health.player2 = 0;
@@ -287,7 +278,6 @@ const app = new Vue({
     },
 
     // --- ACTIONS ---
-
     playerAttack(type) {
       if (this.turnInProgress) return;
       this.turnInProgress = true;
@@ -315,6 +305,9 @@ const app = new Vue({
         this.createLog(`💨 Attack MISSED on ${p2Name}!`);
       } else {
         this.health.player2 -= damage;
+        // CHECKPOINT FIX: Prevent negative numbers
+        if (this.health.player2 < 0) this.health.player2 = 0;
+
         this.triggerVisualEffect('player2');
         if (type === 'special') {
           this.spawnFloatingText('player2', `-${damage}`, 'special');
@@ -390,6 +383,9 @@ const app = new Vue({
           this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
         } else {
           this.health.player1 -= damage;
+          // CHECKPOINT FIX: Prevent negative numbers
+          if (this.health.player1 < 0) this.health.player1 = 0;
+
           this.triggerVisualEffect('player1');
           if (action === 'special') {
             this.spawnFloatingText('player1', `-${damage}`, 'special');
