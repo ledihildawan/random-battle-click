@@ -30,6 +30,7 @@ const app = new Vue({
       tempSelection: null,
       focusedCharIndex: 0,
       battleMenuIndex: 0,
+      battleMenuIndex: 0,
 
       turnInProgress: false,
       globalShake: false,
@@ -275,7 +276,6 @@ const app = new Vue({
       this.startLoading();
     },
 
-    // --- GAME LOGIC ---
     checkWinner() {
       if (this.health.player2 <= 0) {
         this.health.player2 = 0;
