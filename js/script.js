@@ -25,7 +25,6 @@ const app = new Vue({
         player1: 100,
         player2: 100,
       },
-      // Menyimpan efek visual melayang (floating text)
       activeFx: {
         player1: [],
         player2: [],
@@ -35,11 +34,13 @@ const app = new Vue({
         winner: false,
         giveUp: false,
       },
-      // State untuk mengunci tombol saat giliran musuh
       turnInProgress: false,
 
       limit: { heal: 3 },
-      tracker: { heal: 0 },
+      tracker: {
+        playerHeal: 0,
+        enemyHeal: 0,
+      },
       stats: {
         win: { player1: 0, player2: 0 },
       },
@@ -52,7 +53,7 @@ const app = new Vue({
   },
 
   methods: {
-    // --- UTILS & SETUP ---
+    // --- UTILS ---
     getRandPlayers() {
       return this.players[Math.floor(Math.random() * this.players.length)];
     },
@@ -62,8 +63,6 @@ const app = new Vue({
         if (this.status.play) clearInterval(rand);
         this.selectedPlayer.player1 = this.getRandPlayers();
         this.selectedPlayer.player2 = this.getRandPlayers();
-
-        // Pastikan Player 1 dan 2 tidak sama
         if (this.selectedPlayer.player1.id === this.selectedPlayer.player2.id) {
           this.selectedPlayer.player2 = this.getRandPlayers();
         }
@@ -88,36 +87,38 @@ const app = new Vue({
       this.status.play = true;
       this.status.winner = false;
       this.status.giveUp = false;
-      this.turnInProgress = false;
       this.health.player1 = 100;
       this.health.player2 = 100;
-      this.tracker.heal = 0;
+      this.tracker.playerHeal = 0;
+      this.tracker.enemyHeal = 0;
       this.logs = [];
       this.activeFx.player1 = [];
       this.activeFx.player2 = [];
+
       this.createLog('System Initialized. Battle Start!');
+
+      // COIN TOSS (50/50 Chance)
+      const playerStarts = Math.random() < 0.5;
+
+      if (playerStarts) {
+        this.turnInProgress = false;
+        this.createLog("🚀 <span style='color:#209cee'>INITIATIVE:</span> You attack first!");
+      } else {
+        this.turnInProgress = true;
+        this.createLog("⚠️ <span style='color:#e76e55'>WARNING:</span> Enemy attacks first!");
+        setTimeout(() => {
+          this.enemyTurn();
+        }, 1500);
+      }
     },
 
     reBattle() {
-      this.resetCrown(['player1', 'player2']);
-      this.status.play = true;
-      this.status.winner = false;
-      this.status.giveUp = false;
-      this.turnInProgress = false;
-      this.health.player1 = 100;
-      this.health.player2 = 100;
-      this.tracker.heal = 0;
-      this.logs = [];
-      this.activeFx.player1 = [];
-      this.activeFx.player2 = [];
-      this.createLog('Re-calibrating... New Battle Start!');
+      this.startNewGame();
     },
 
     exitGame() {
       this.resetCrown(['player1', 'player2']);
       this.selectRandPlayers();
-      this.stats.win.player1 = 0;
-      this.stats.win.player2 = 0;
       this.status.play = false;
       this.status.winner = false;
       this.status.giveUp = false;
@@ -130,29 +131,25 @@ const app = new Vue({
     },
 
     checkWinner() {
-      // Skenario Player 2 (Musuh) Mati -> Player 1 Menang
       if (this.health.player2 <= 0) {
         this.health.player2 = 0;
         const name = this.selectedPlayer.player1.name.toUpperCase();
         this.selectedPlayer.player1.name = `👑 ${name}`;
         this.stats.win.player1 += 1;
-
         this.createLog(
-          `<span style="color:#209cee; font-weight:bold;">🏆 MISSION ACCOMPLISHED! You defeated ${this.selectedPlayer.player2.name}!</span>`
+          `<span style="color:#209cee; font-weight:bold;">🏆 VICTORY! You defeated ${this.selectedPlayer.player2.name}!</span>`
         );
         this.gameOver();
         return true;
       }
 
-      // Skenario Player 1 (Kita) Mati -> Musuh Menang
       if (this.health.player1 <= 0) {
         this.health.player1 = 0;
         const name = this.selectedPlayer.player2.name.toUpperCase();
         this.selectedPlayer.player2.name = `👑 ${name}`;
         this.stats.win.player2 += 1;
-
         this.createLog(
-          `<span style="color:#e76e55; font-weight:bold;">💀 MISSION FAILED! You were eliminated by ${name}.</span>`
+          `<span style="color:#e76e55; font-weight:bold;">💀 DEFEAT! You were eliminated by ${name}.</span>`
         );
         this.gameOver();
         return true;
@@ -165,11 +162,8 @@ const app = new Vue({
     },
 
     createLog(message) {
-      // UPDATE: Selector disesuaikan dengan HTML baru (.logs-terminal)
       const logsContainer = document.querySelector('.logs-terminal');
-
       this.logs.push(message);
-
       if (logsContainer) {
         setTimeout(() => {
           logsContainer.scrollTo({ left: 0, top: logsContainer.scrollHeight, behavior: 'smooth' });
@@ -177,14 +171,12 @@ const app = new Vue({
       }
     },
 
-    // --- VISUAL EFFECTS ---
     triggerVisualEffect(targetPlayer) {
-      // Mencari gambar berdasarkan class di HTML baru
       const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
       const el = document.querySelector(selector);
       if (el) {
         el.classList.remove('shake', 'hit-flash');
-        void el.offsetWidth; // Trigger reflow untuk restart animasi
+        void el.offsetWidth;
         el.classList.add('shake', 'hit-flash');
         setTimeout(() => el.classList.remove('hit-flash'), 200);
       }
@@ -193,27 +185,23 @@ const app = new Vue({
     spawnFloatingText(targetPlayer, text, type) {
       const id = Date.now() + Math.random();
       this.activeFx[targetPlayer].push({ id, text, type });
-
-      // Hapus text setelah 1 detik
       setTimeout(() => {
         this.activeFx[targetPlayer] = this.activeFx[targetPlayer].filter((fx) => fx.id !== id);
       }, 1000);
     },
 
-    // --- TURN-BASED LOGIC ---
+    // --- GAMEPLAY LOGIC ---
 
-    // 1. Player Turn (Kita menyerang)
     playerAttack(type) {
-      if (this.turnInProgress) return; // Mencegah spam klik
+      if (this.turnInProgress) return;
 
-      this.turnInProgress = true; // Kunci tombol agar tidak bisa diklik
+      this.turnInProgress = true;
 
       const p2Name = this.selectedPlayer.player2.name;
       let damage = 0;
       let isCrit = false;
       let isMiss = false;
 
-      // Logika Damage
       if (type === 'normal') {
         damage = this.calcDamage(3, 10);
         if (Math.random() < 0.15) {
@@ -228,7 +216,6 @@ const app = new Vue({
         }
       }
 
-      // Eksekusi ke Musuh
       if (isMiss) {
         this.spawnFloatingText('player2', 'MISS', 'miss');
         this.createLog(`💨 Attack MISSED on ${p2Name}!`);
@@ -247,68 +234,96 @@ const app = new Vue({
         }
       }
 
-      // Cek Kemenangan
-      if (this.checkWinner()) {
-        return; // Game selesai
-      } else {
-        // Delay sebelum musuh menyerang balik (1 detik)
+      if (!this.checkWinner()) {
         setTimeout(() => {
           this.enemyTurn();
-        }, 1000);
+        }, 1200);
       }
     },
 
-    // 2. Player Heal
     playerHeal() {
-      if (this.turnInProgress || this.tracker.heal >= this.limit.heal) return;
+      if (this.turnInProgress || this.tracker.playerHeal >= this.limit.heal) return;
 
       this.turnInProgress = true;
-      this.tracker.heal++;
+      this.tracker.playerHeal++;
 
       const healAmount = Math.floor(Math.random() * 15) + 10;
       this.health.player1 += healAmount;
       if (this.health.player1 > 100) this.health.player1 = 100;
 
       this.spawnFloatingText('player1', `+${healAmount}`, 'heal');
-      this.createLog(`💊 REPAIR: System integrity restored by ${healAmount}.`);
+      this.createLog(`💊 REPAIR: You restored ${healAmount} HP.`);
 
-      // Musuh tetap menyerang setelah kita heal
       setTimeout(() => {
         this.enemyTurn();
-      }, 1000);
+      }, 1200);
     },
 
-    // 3. Enemy Turn (CPU)
     enemyTurn() {
       if (this.status.winner) return;
 
       const p2Name = this.selectedPlayer.player2.name;
+      let action = 'attack';
 
-      // AI Sederhana: Random damage
-      let damage = this.calcDamage(5, 12);
-      let isCrit = Math.random() < 0.15;
+      // AI Logic
+      const canHeal = this.tracker.enemyHeal < this.limit.heal;
+      const isLowHp = this.health.player2 < 40;
 
-      if (isCrit) damage *= 2;
-
-      this.health.player1 -= damage;
-      this.triggerVisualEffect('player1');
-
-      this.spawnFloatingText('player1', `-${damage}`, isCrit ? 'crit' : 'damage');
-
-      if (isCrit) {
-        this.createLog(`<span style="color:#e76e55">⚠️ WARNING!</span> ${p2Name} landed a CRITICAL HIT of ${damage}!`);
-      } else {
-        this.createLog(`🛡️ ${p2Name} attacks! You took ${damage} damage.`);
+      if (isLowHp && canHeal && Math.random() < 0.4) {
+        action = 'heal';
+      } else if (Math.random() < 0.25) {
+        action = 'special';
       }
 
-      // Cek apakah kita mati
+      if (action === 'heal') {
+        this.tracker.enemyHeal++;
+        const healAmount = Math.floor(Math.random() * 15) + 10;
+        this.health.player2 += healAmount;
+        if (this.health.player2 > 100) this.health.player2 = 100;
+
+        this.spawnFloatingText('player2', `+${healAmount}`, 'heal');
+        this.createLog(`💊 <span style="color:#e76e55">${p2Name}</span> used a Medkit (+${healAmount} HP).`);
+      } else {
+        let damage = 0;
+        let isCrit = false;
+        let isMiss = false;
+
+        if (action === 'special') {
+          damage = this.calcDamage(10, 25);
+          if (Math.random() < 0.2) isMiss = true;
+        } else {
+          damage = this.calcDamage(3, 10);
+          if (Math.random() < 0.15) {
+            damage *= 2;
+            isCrit = true;
+          }
+        }
+
+        if (isMiss) {
+          this.spawnFloatingText('player1', 'MISS', 'miss');
+          this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
+        } else {
+          this.health.player1 -= damage;
+          this.triggerVisualEffect('player1');
+
+          if (action === 'special') {
+            this.spawnFloatingText('player1', `-${damage}`, 'special');
+            this.createLog(`✨ ${p2Name} used <span style="color:#f7d51d">SPECIAL ATTACK</span> for ${damage} DMG!`);
+          } else {
+            this.spawnFloatingText('player1', `-${damage}`, isCrit ? 'crit' : 'damage');
+            if (isCrit)
+              this.createLog(`<span style="color:#e76e55">⚠️ CRITICAL HIT!</span> ${p2Name} hit you for ${damage}!`);
+            else this.createLog(`🛡️ ${p2Name} attacks! You took ${damage} damage.`);
+          }
+        }
+      }
+
       if (!this.checkWinner()) {
-        // Jika masih hidup, buka kunci tombol (Giliran Player)
         this.turnInProgress = false;
       }
     },
 
-    // --- DIALOGS ---
+    // --- DIALOGS & HELPERS ---
     showDialogGiveUp() {
       const backdrop = document.createElement('div');
       backdrop.className = 'give-up-dialog-backdrop';
@@ -334,9 +349,7 @@ const app = new Vue({
       this.hideDialogGiveUp();
     },
 
-    // --- HELPERS ---
     healthBarColorStatus(value) {
-      // Mengembalikan class NES.css untuk warna progress bar
       return {
         'is-primary': value > 50,
         'is-warning': value > 20 && value <= 50,
