@@ -30,12 +30,13 @@ const app = new Vue({
       tempSelection: null,
       focusedCharIndex: 0,
       battleMenuIndex: 0,
+      battleMenuIndex: 0,
 
       turnInProgress: false,
       globalShake: false,
       loadingProgress: 0,
 
-      // Konami Code Variables
+      // Cheats
       inputBuffer: [],
       konamiCode: [
         'ArrowUp',
@@ -72,12 +73,17 @@ const app = new Vue({
   },
 
   methods: {
-    // === KEYBOARD CONTROLLER ===
+    // --- KEYBOARD LOGIC ---
     handleKeydown(e) {
       if (this.isTitleScreen) {
         this.inputBuffer.push(e.key);
-        if (this.inputBuffer.length > this.konamiCode.length) this.inputBuffer.shift();
-        if (JSON.stringify(this.inputBuffer) === JSON.stringify(this.konamiCode)) {
+        if (this.inputBuffer.length > 20) this.inputBuffer.shift(); // Memory fix
+
+        // Simple array check for Konami Code
+        const bufferString = this.inputBuffer.slice(-this.konamiCode.length).join(',');
+        const codeString = this.konamiCode.join(',');
+
+        if (bufferString === codeString) {
           this.activateCheat();
         }
       }
@@ -188,6 +194,7 @@ const app = new Vue({
       if (this.battleMenuIndex === 2) this.playerHeal();
     },
 
+    // --- NAVIGATION ---
     goToSelectScreen() {
       this.status.selecting = true;
       this.status.play = false;
@@ -307,9 +314,10 @@ const app = new Vue({
       const logsContainer = document.querySelector('.logs-terminal');
       this.logs.push(message);
       if (logsContainer) {
-        setTimeout(() => {
+        // Fix: Use nextTick for reliable scrolling
+        this.$nextTick(() => {
           logsContainer.scrollTo({ left: 0, top: logsContainer.scrollHeight, behavior: 'smooth' });
-        }, 50);
+        });
       }
     },
 
@@ -357,6 +365,7 @@ const app = new Vue({
       container.innerHTML = '';
     },
 
+    // --- ACTIONS ---
     playerAttack(type) {
       if (this.turnInProgress) return;
       this.turnInProgress = true;
@@ -387,7 +396,9 @@ const app = new Vue({
         this.createLog(`💨 Attack MISSED on ${p2Name}!`);
       } else {
         this.health.player2 -= damage;
+        // Fix: Prevent Negative HP
         if (this.health.player2 < 0) this.health.player2 = 0;
+
         this.triggerVisualEffect('player2');
         if (type === 'special') {
           this.spawnFloatingText('player2', `-${damage}`, 'special');
@@ -463,6 +474,7 @@ const app = new Vue({
           this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
         } else {
           this.health.player1 -= damage;
+          // Fix: Prevent Negative HP
           if (this.health.player1 < 0) this.health.player1 = 0;
 
           this.triggerVisualEffect('player1');
@@ -508,7 +520,7 @@ const app = new Vue({
       this.hideDialogGiveUp();
     },
 
-    // --- MISSING FUNCTION ADDED HERE ---
+    // --- FIX: FUNCTION RESTORED INSIDE METHODS ---
     healthBarColorStatus(value) {
       return {
         'is-primary': value > 50,

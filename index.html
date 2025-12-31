@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle: Ultimate Keyboard Edition</title>
+    <title>Retro Battle: Final Version</title>
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
@@ -12,7 +12,7 @@
       <div id="confetti-container"></div>
 
       <transition name="fade">
-        <div v-if="cheatActivated" class="cheat-toast">🔓 SECRET CHARACTER UNLOCKED!</div>
+        <div v-if="cheatActivated" class="cheat-toast">🔓 GOD MODE ACTIVATED!</div>
       </transition>
 
       <div class="container" :class="{ 'shake-screen': globalShake }">
@@ -31,11 +31,7 @@
               PRESS START <span class="key-hint">[ENTER]</span>
             </button>
           </div>
-
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px; line-height: 1.6">
-            v5.0 Ultimate Keyboard Edition<br />
-            Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A
-          </div>
+          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">v5.1 Stable Build</div>
         </div>
 
         <div v-if="status.selecting" class="screen-select fade-in">
@@ -80,7 +76,6 @@
         <div v-if="status.loading" class="screen-loading text-center">
           <p style="margin-bottom: 10px">INITIALIZING BATTLE...</p>
           <progress class="nes-progress is-pattern" :value="loadingProgress" max="100"></progress>
-          <p style="font-size: 10px; margin-top: 10px; color: #666">Syncing Neural Network...</p>
         </div>
 
         <div v-if="status.play || status.winner" class="screen-battle fade-in">
@@ -92,7 +87,6 @@
               <span class="identity-badge badge-p1 nes-badge is-splited">
                 <span class="is-dark">P1</span><span class="is-primary">YOU</span>
               </span>
-
               <div class="player__media">
                 <div class="visual-fx-container">
                   <transition-group name="float-up" tag="div">
@@ -108,7 +102,6 @@
                   alt=""
                 />
               </div>
-
               <p class="player__name" :class="{ 'secret-text': selectedPlayer.player1.isSecret }">
                 {{ selectedPlayer.player1.name }}
               </p>
@@ -119,10 +112,6 @@
                 max="100"
                 :class="healthBarColorStatus(health.player1)"
               ></progress>
-
-              <div style="text-align: center; margin-top: 8px" v-if="stats.win.player1 > 0">
-                <i class="nes-icon trophy is-small"></i> x{{ stats.win.player1 }}
-              </div>
             </div>
 
             <div class="vs-badge">VS</div>
@@ -134,7 +123,6 @@
               <span class="identity-badge badge-p2 nes-badge is-splited">
                 <span class="is-dark">CPU</span><span class="is-error">ENEMY</span>
               </span>
-
               <div class="player__media">
                 <div class="visual-fx-container">
                   <transition-group name="float-up" tag="div">
@@ -150,7 +138,6 @@
                   alt=""
                 />
               </div>
-
               <p class="player__name">{{ selectedPlayer.player2.name }}</p>
               <div class="hp-text">{{ health.player2 }} / 100</div>
               <progress
@@ -159,16 +146,11 @@
                 max="100"
                 :class="healthBarColorStatus(health.player2)"
               ></progress>
-
-              <div style="text-align: center; margin-top: 8px" v-if="stats.win.player2 > 0">
-                <i class="nes-icon trophy is-small"></i> x{{ stats.win.player2 }}
-              </div>
             </div>
           </div>
 
           <div class="nes-container with-title is-centered control-panel">
             <p class="title">Command Center</p>
-
             <div class="actions">
               <div class="combat-buttons" v-if="!status.winner">
                 <button
@@ -249,7 +231,6 @@
       <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
         <form method="dialog">
           <p class="title">Surrender?</p>
-          <p>Run away?</p>
           <menu class="dialog-menu">
             <button class="nes-btn" @click.prevent="hideDialogGiveUp">
               Cancel <span class="key-hint">[ESC]</span>
