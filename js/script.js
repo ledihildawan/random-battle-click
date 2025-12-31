@@ -21,10 +21,7 @@ const app = new Vue({
         player1: { id: null, name: '', avatar: '' },
         player2: { id: null, name: '', avatar: '' },
       },
-      health: {
-        player1: 100,
-        player2: 100,
-      },
+      health: { player1: 100, player2: 100 },
       activeFx: { player1: [], player2: [] },
       status: {
         selecting: false,
@@ -34,10 +31,11 @@ const app = new Vue({
         giveUp: false,
       },
       tempSelection: null,
+      focusedCharIndex: 0, // NEW: Tracks keyboard selection focus
       loadingProgress: 0,
 
       turnInProgress: false,
-      globalShake: false, // For critical hits
+      globalShake: false,
 
       limit: { heal: 3 },
       tracker: { playerHeal: 0, enemyHeal: 0 },
@@ -52,7 +50,6 @@ const app = new Vue({
     },
   },
 
-  // === UX UPGRADE: KEYBOARD LISTENER ===
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
   },
@@ -61,19 +58,62 @@ const app = new Vue({
   },
 
   methods: {
-    // --- KEYBOARD CONTROLS ---
+    // === KEYBOARD MASTER CONTROLLER ===
     handleKeydown(e) {
+      if (this.status.loading) return; // Block input during loading
+
+      // 1. TITLE SCREEN
+      if (this.isTitleScreen) {
+        if (e.key === 'Enter') this.goToSelectScreen();
+        return;
+      }
+
+      // 2. CHARACTER SELECTION
+      if (this.status.selecting) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') this.moveFocus(1);
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') this.moveFocus(-1);
+        if (e.key === 'Enter') this.confirmSelection();
+        if (e.key === 'Escape') this.backToTitle();
+        return;
+      }
+
+      // 3. DIALOG (Surrender)
+      if (this.status.giveUp) {
+        // Only if using custom logic var, but here we use dialog visibility
+        const dialog = document.getElementById('give-up-dialog');
+        if (dialog && dialog.getAttribute('open')) {
+          if (e.key === 'Escape') this.hideDialogGiveUp();
+          if (e.key === 'Enter') this.giveUp();
+          return;
+        }
+      }
+
+      // 4. BATTLE STATE
       if (this.status.play && !this.status.winner && !this.turnInProgress) {
         if (e.key === '1') this.playerAttack('normal');
         if (e.key === '2') this.playerAttack('special');
         if (e.key === '3') this.playerHeal();
+        if (e.key === 'Escape') this.showDialogGiveUp();
       }
 
-      if (e.key === 'Enter') {
-        if (this.isTitleScreen) this.goToSelectScreen();
-        else if (this.status.selecting && this.tempSelection) this.confirmSelection();
-        else if (this.status.winner) this.goToSelectScreen();
+      // 5. GAME OVER
+      if (this.status.winner) {
+        if (e.key === 'r' || e.key === 'R') this.reBattle();
+        if (e.key === 'Enter') this.goToSelectScreen();
+        if (e.key === 'Escape') this.backToTitle();
       }
+    },
+
+    // Keyboard Focus Helper
+    moveFocus(dir) {
+      let newIndex = this.focusedCharIndex + dir;
+      // Wrap around logic
+      if (newIndex < 0) newIndex = this.players.length - 1;
+      if (newIndex >= this.players.length) newIndex = 0;
+
+      this.focusedCharIndex = newIndex;
+      // Auto-select when moving focus (Optional, but good for UX)
+      this.tempSelection = this.players[newIndex];
     },
 
     // --- NAVIGATION ---
@@ -81,11 +121,14 @@ const app = new Vue({
       this.status.selecting = true;
       this.status.play = false;
       this.status.winner = false;
-      this.tempSelection = null;
+      this.tempSelection = this.players[0]; // Default Select First
+      this.focusedCharIndex = 0; // Reset Focus
     },
 
-    selectPlayer(player) {
+    // Mouse click support
+    clickSelectPlayer(player, index) {
       this.tempSelection = player;
+      this.focusedCharIndex = index;
     },
 
     confirmSelection() {
@@ -164,7 +207,7 @@ const app = new Vue({
         this.createLog(
           `<span style="color:#209cee; font-weight:bold;">🏆 VICTORY! You defeated ${this.selectedPlayer.player2.name}!</span>`
         );
-        this.spawnConfetti(); // JUICE: WINNER CONFETTI
+        this.spawnConfetti();
         this.gameOver();
         return true;
       }
@@ -210,7 +253,6 @@ const app = new Vue({
       }
     },
 
-    // JUICE: Global screen shake on crit
     triggerGlobalShake() {
       this.globalShake = true;
       setTimeout(() => {
@@ -226,7 +268,6 @@ const app = new Vue({
       }, 1000);
     },
 
-    // JUICE: Confetti Generator
     spawnConfetti() {
       const container = document.getElementById('confetti-container');
       const colors = ['#f7d51d', '#e76e55', '#209cee', '#92cc41'];
@@ -245,7 +286,7 @@ const app = new Vue({
       container.innerHTML = '';
     },
 
-    // --- BATTLE ACTIONS ---
+    // --- ACTIONS ---
 
     playerAttack(type) {
       if (this.turnInProgress) return;
@@ -282,7 +323,7 @@ const app = new Vue({
           this.spawnFloatingText('player2', `-${damage}`, isCrit ? 'crit' : 'damage');
           if (isCrit) {
             this.createLog(`<span style="color:#e76e55">💥 CRITICAL HIT!</span> You dealt ${damage} DMG!`);
-            this.triggerGlobalShake(); // Shake screen on crit
+            this.triggerGlobalShake();
           } else {
             this.createLog(`🗡️ You hit ${p2Name} for ${damage} DMG.`);
           }
