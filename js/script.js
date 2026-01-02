@@ -71,6 +71,7 @@ const app = new Vue({
 
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
+    UIEffects.initSnow();
     // Splash Timer Matches CSS Animation (2.5s + buffer)
     setTimeout(() => {
       this.showSplash = false;
@@ -136,14 +137,38 @@ const app = new Vue({
       }
 
       if (this.status.winner) {
-        if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
-        if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
-
-        if (e.key === 'Enter') {
-          if (this.battleMenuIndex === 0) this.goToSelectScreen();
-          if (this.battleMenuIndex === 1) this.reBattle();
-          if (this.battleMenuIndex === 2) this.backToTitle();
+        // --- 1. Navigasi Panah (Multi-dimensi) ---
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          this.battleMenuIndex = (this.battleMenuIndex + 1) % 3;
         }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          this.battleMenuIndex = (this.battleMenuIndex - 1 + 3) % 3;
+        }
+
+        // --- 2. Shortcut Key Instan ---
+        // Tekan 'R' untuk Rematch
+        if (e.key.toLowerCase() === 'r') {
+          this.reBattle();
+          return;
+        }
+        // Tekan 'Esc' untuk kembali ke Title
+        if (e.key === 'Escape') {
+          this.backToTitle();
+          return;
+        }
+        // Tekan 'N' untuk New Character (Opsional)
+        if (e.key.toLowerCase() === 'n') {
+          this.goToSelectScreen();
+          return;
+        }
+
+        // --- 3. Eksekusi Menu Berdasarkan Pilihan Index (Enter) ---
+        if (e.key === 'Enter') {
+          if (this.battleMenuIndex === 0) this.goToSelectScreen(); // New Fighter
+          else if (this.battleMenuIndex === 1) this.reBattle(); // Rematch
+          else if (this.battleMenuIndex === 2) this.backToTitle(); // Exit
+        }
+        return;
       }
     },
 
@@ -190,9 +215,7 @@ const app = new Vue({
     },
 
     executeBattleAction() {
-      if (this.battleMenuIndex === 0) this.playerAttack('normal');
-      if (this.battleMenuIndex === 1) this.playerAttack('special');
-      if (this.battleMenuIndex === 2) this.playerHeal();
+      BattleEngine.executeBattleAction(this);
     },
 
     goToSelectScreen() {
@@ -239,41 +262,11 @@ const app = new Vue({
     },
 
     startNewBattle() {
-      let opponent;
-      do {
-        opponent = this.players[Math.floor(Math.random() * this.players.length)];
-      } while (opponent.id === this.selectedPlayer.player1.id);
-
-      this.selectedPlayer.player2 = opponent;
-      this.status.play = true;
-      this.status.winner = false;
-      this.health.player1 = 100;
-      this.health.player2 = 100;
-      this.tracker.playerHeal = 0;
-      this.tracker.enemyHeal = 0;
-      this.logs = [];
-      this.activeFx = { player1: [], player2: [] };
-      this.clearConfetti();
-      this.battleMenuIndex = 0;
-
-      this.createLog('System Initialized. Battle Start!');
-
-      const playerStarts = Math.random() < 0.5;
-      if (playerStarts) {
-        this.turnInProgress = false;
-        this.createLog('🚀 INITIATIVE: You attack first!');
-      } else {
-        this.turnInProgress = true;
-        this.createLog('⚠️ WARNING: Enemy attacks first!');
-        setTimeout(() => {
-          this.enemyTurn();
-        }, 1500);
-      }
+      BattleEngine.startNewBattle(this);
     },
 
     reBattle() {
-      this.status.winner = false;
-      this.startLoading();
+      BattleEngine.reBattle(this);
     },
 
     checkWinner() {
@@ -306,9 +299,7 @@ const app = new Vue({
       this.battleMenuIndex = 0;
     },
 
-    calcDamage(min, max) {
-      return Math.max(Math.floor(Math.random() * max) + 1, min);
-    },
+    // Delegated to BattleEngine
 
     createLog(message) {
       const logsContainer = document.querySelector('.logs-terminal');
@@ -320,189 +311,26 @@ const app = new Vue({
       }
     },
 
-    triggerVisualEffect(targetPlayer) {
-      const selector = targetPlayer === 'player1' ? '.player-1-img' : '.player-2-img';
-      const el = document.querySelector(selector);
-      if (el) {
-        el.classList.remove('shake', 'hit-flash');
-        void el.offsetWidth;
-        el.classList.add('shake', 'hit-flash');
-        setTimeout(() => el.classList.remove('hit-flash'), 200);
-      }
-    },
-
-    triggerGlobalShake() {
-      this.globalShake = true;
-      setTimeout(() => {
-        this.globalShake = false;
-      }, 500);
-    },
-
-    spawnFloatingText(targetPlayer, text, type) {
-      const id = Date.now() + Math.random();
-      this.activeFx[targetPlayer].push({ id, text, type });
-      setTimeout(() => {
-        this.activeFx[targetPlayer] = this.activeFx[targetPlayer].filter((fx) => fx.id !== id);
-      }, 1000);
-    },
-
-    spawnConfetti() {
-      const container = document.getElementById('confetti-container');
-      const colors = ['#f7d51d', '#e76e55', '#209cee', '#92cc41'];
-      for (let i = 0; i < 50; i++) {
-        const div = document.createElement('div');
-        div.className = 'confetti';
-        div.style.left = Math.random() * 100 + 'vw';
-        div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        div.style.animationDuration = Math.random() * 3 + 2 + 's';
-        container.appendChild(div);
-      }
-    },
-
-    clearConfetti() {
-      const container = document.getElementById('confetti-container');
-      container.innerHTML = '';
-    },
+    // Visual effects delegated to UIEffects
 
     playerAttack(type) {
-      if (this.turnInProgress) return;
-      this.turnInProgress = true;
-      const p2Name = this.selectedPlayer.player2.name;
-      let damage = 0,
-        isCrit = false,
-        isMiss = false;
-
-      const isGod = this.selectedPlayer.player1.id === 999;
-      const multiplier = isGod ? 2 : 1;
-
-      if (type === 'normal') {
-        damage = this.calcDamage(3, 10) * multiplier;
-        if (Math.random() < 0.15) {
-          damage *= 2;
-          isCrit = true;
-        }
-      } else if (type === 'special') {
-        damage = this.calcDamage(10, 25) * multiplier;
-        if (Math.random() < 0.2) {
-          damage = 0;
-          isMiss = true;
-        }
-      }
-
-      if (isMiss) {
-        this.spawnFloatingText('player2', 'MISS', 'miss');
-        this.createLog(`💨 Attack MISSED on ${p2Name}!`);
-      } else {
-        this.health.player2 -= damage;
-        if (this.health.player2 < 0) this.health.player2 = 0;
-
-        this.triggerVisualEffect('player2');
-        if (type === 'special') {
-          this.spawnFloatingText('player2', `-${damage}`, 'special');
-          this.createLog(`✨ <span style="color:#f7d51d">SPECIAL!</span> You blasted ${p2Name} for ${damage} DMG!`);
-        } else {
-          this.spawnFloatingText('player2', `-${damage}`, isCrit ? 'crit' : 'damage');
-          if (isCrit) {
-            this.createLog(`<span style="color:#e76e55">💥 CRITICAL HIT!</span> You dealt ${damage} DMG!`);
-            this.triggerGlobalShake();
-          } else {
-            this.createLog(`🗡️ You hit ${p2Name} for ${damage} DMG.`);
-          }
-        }
-      }
-
-      if (!this.checkWinner())
-        setTimeout(() => {
-          this.enemyTurn();
-        }, 1200);
+      BattleEngine.playerAttack(this, type);
     },
 
     playerHeal() {
-      if (this.turnInProgress || this.tracker.playerHeal >= this.limit.heal) return;
-      this.turnInProgress = true;
-      this.tracker.playerHeal++;
-
-      const healAmount = Math.floor(Math.random() * 15) + 10;
-      this.health.player1 += healAmount;
-      if (this.health.player1 > 100) this.health.player1 = 100;
-
-      this.spawnFloatingText('player1', `+${healAmount}`, 'heal');
-      this.createLog(`💊 REPAIR: You restored ${healAmount} HP.`);
-      setTimeout(() => {
-        this.enemyTurn();
-      }, 1200);
+      BattleEngine.playerHeal(this);
     },
 
     enemyTurn() {
-      if (this.status.winner) return;
-      const p2Name = this.selectedPlayer.player2.name;
-      let action = 'attack';
-
-      const canHeal = this.tracker.enemyHeal < this.limit.heal;
-      const isLowHp = this.health.player2 < 40;
-
-      if (isLowHp && canHeal && Math.random() < 0.4) action = 'heal';
-      else if (Math.random() < 0.25) action = 'special';
-
-      if (action === 'heal') {
-        this.tracker.enemyHeal++;
-        const healAmount = Math.floor(Math.random() * 15) + 10;
-        this.health.player2 += healAmount;
-        if (this.health.player2 > 100) this.health.player2 = 100;
-        this.spawnFloatingText('player2', `+${healAmount}`, 'heal');
-        this.createLog(`💊 <span style="color:#e76e55">${p2Name}</span> used a Medkit (+${healAmount} HP).`);
-      } else {
-        let damage = 0,
-          isCrit = false,
-          isMiss = false;
-        if (action === 'special') {
-          damage = this.calcDamage(10, 25);
-          if (Math.random() < 0.2) isMiss = true;
-        } else {
-          damage = this.calcDamage(3, 10);
-          if (Math.random() < 0.15) {
-            damage *= 2;
-            isCrit = true;
-          }
-        }
-
-        if (isMiss) {
-          this.spawnFloatingText('player1', 'MISS', 'miss');
-          this.createLog(`💨 ${p2Name} tried a Special Attack but MISSED!`);
-        } else {
-          this.health.player1 -= damage;
-          if (this.health.player1 < 0) this.health.player1 = 0;
-
-          this.triggerVisualEffect('player1');
-          if (action === 'special') {
-            this.spawnFloatingText('player1', `-${damage}`, 'special');
-            this.createLog(`✨ ${p2Name} used <span style="color:#f7d51d">SPECIAL ATTACK</span> for ${damage} DMG!`);
-          } else {
-            this.spawnFloatingText('player1', `-${damage}`, isCrit ? 'crit' : 'damage');
-            if (isCrit) {
-              this.createLog(`<span style="color:#e76e55">⚠️ CRITICAL HIT!</span> ${p2Name} hit you for ${damage}!`);
-              this.triggerGlobalShake();
-            } else {
-              this.createLog(`🛡️ ${p2Name} attacks! You took ${damage} damage.`);
-            }
-          }
-        }
-      }
-      if (!this.checkWinner()) this.turnInProgress = false;
+      BattleEngine.enemyTurn(this);
     },
 
     showDialogGiveUp() {
       this.isDialogOpen = true;
-      const backdrop = document.createElement('div');
-      backdrop.className = 'give-up-dialog-backdrop';
-      document.getElementById('give-up-dialog').setAttribute('open', 'true');
-      // Removed manual backdrop creation logic here because we use v-if in template now
-      // This keeps logic clean
     },
 
     hideDialogGiveUp() {
       this.isDialogOpen = false;
-      document.getElementById('give-up-dialog').removeAttribute('open');
     },
 
     giveUp() {
@@ -520,6 +348,46 @@ const app = new Vue({
         'is-warning': value > 20 && value <= 50,
         'is-error': value <= 20,
       };
+    },
+
+    initSnow() {
+      const container = document.getElementById('snow-container');
+      const snowCount = 60; // Sedikit lebih banyak untuk kedalaman
+
+      for (let i = 0; i < snowCount; i++) {
+        const snow = document.createElement('div');
+        snow.className = 'snow-pixel';
+
+        // Mengatur "Depth" (Kedalaman) secara acak
+        const sizeType = Math.random();
+        let size = 4; // Ukuran pixel standar
+        let opacity = 0.8;
+        let duration = Math.random() * 3 + 4; // Lebih lambat
+
+        if (sizeType < 0.3) {
+          // Salju jauh (kecil & lambat)
+          size = 2;
+          opacity = 0.4;
+          duration = Math.random() * 5 + 7;
+        } else if (sizeType > 0.8) {
+          // Salju dekat (besar & cepat)
+          size = 6;
+          opacity = 0.9;
+          duration = Math.random() * 2 + 3;
+        }
+
+        // Terapkan Style
+        snow.style.width = `${size}px`;
+        snow.style.height = `${size}px`;
+        snow.style.opacity = opacity;
+        snow.style.left = Math.random() * 100 + 'vw';
+
+        // Animasi
+        snow.style.animationDuration = `${duration}s, ${Math.random() * 2 + 2}s`;
+        snow.style.animationDelay = `${Math.random() * 5}s, ${Math.random() * 2}s`;
+
+        container.appendChild(snow);
+      }
     },
   },
 });
