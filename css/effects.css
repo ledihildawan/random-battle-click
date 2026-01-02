@@ -1,0 +1,144 @@
+/* --- EFFECTS / ANIMATIONS / CONFETTI / SNOW --- */
+.shake-screen {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+.hit-flash {
+  filter: sepia(100%) saturate(300%) hue-rotate(-50deg) brightness(1.5);
+  transition: filter 0.1s;
+}
+.floating-text {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 20;
+  text-shadow: 2px 2px 0 var(--shadow);
+  width: 100%;
+  text-align: center;
+}
+.floating-text.damage {
+  color: var(--text-color);
+  -webkit-text-stroke: 1px var(--shadow);
+}
+.floating-text.crit {
+  color: var(--danger);
+  font-size: 26px;
+}
+.floating-text.heal {
+  color: var(--success);
+}
+.floating-text.special {
+  color: var(--warning);
+}
+.floating-text.miss {
+  color: var(--muted);
+}
+
+.float-up-enter-active {
+  transition: all 0.8s ease-out;
+}
+.float-up-enter {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+.float-up-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50px);
+}
+
+/* Confetti container */
+#confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+  overflow: hidden;
+}
+.confetti {
+  position: absolute;
+  top: -20px;
+  perspective: 500px;
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotateX(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateX(360deg) rotateY(720deg);
+    opacity: 0.7;
+  }
+}
+@keyframes confetti-sway {
+  0% {
+    margin-left: -20px;
+  }
+  100% {
+    margin-left: 20px;
+  }
+}
+
+/* Snow */
+#snow-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+  background-color: transparent;
+}
+.snow-pixel {
+  position: absolute;
+  background-color: var(--panel-bg);
+  top: -10px;
+  animation: fall linear infinite, sway ease-in-out infinite;
+  opacity: 0.8;
+}
+@keyframes fall {
+  0% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(110vh);
+  }
+}
+@keyframes sway {
+  0%,
+  100% {
+    margin-left: 0;
+  }
+  50% {
+    margin-left: 20px;
+  }
+}

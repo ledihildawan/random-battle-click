@@ -1,0 +1,24 @@
+/* Component: LogsTerminal */
+.logs-container {
+  margin-bottom: 40px;
+}
+.logs-terminal {
+  background-color: var(--bg-color) !important;
+  color: var(--terminal-green);
+  border-color: var(--panel-bg);
+  height: 180px;
+  overflow-y: auto;
+  font-size: 11px;
+  padding: 15px;
+  line-height: 1.8;
+  box-shadow: 8px 8px 0 var(--shadow);
+}
+.logs-terminal::-webkit-scrollbar {
+  width: 10px;
+}
+.logs-terminal::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+.logs-terminal::-webkit-scrollbar-thumb {
+  background: var(--terminal-green);
+}

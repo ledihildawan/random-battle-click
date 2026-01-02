@@ -1,0 +1,18 @@
+/* --- UI helpers --- */
+.key-hint {
+  font-size: 8px;
+  background: var(--glass);
+  color: var(--text-color);
+  padding: 3px 5px;
+  border-radius: 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+}
+.btn-subtext {
+  font-size: 8px;
+  opacity: 0.8;
+  margin-top: 4px;
+  font-weight: normal;
+  text-transform: none;
+}

@@ -1,0 +1,48 @@
+/* --- BASE / LAYOUT --- */
+html,
+body {
+  overflow-x: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--text-color);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* NO SELECT EXPERIENCE (APP FEEL) */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+.logs-terminal p {
+  user-select: text;
+}
+
+[v-cloak] {
+  display: none;
+}
+
+.container {
+  max-width: var(--container-max-width);
+  width: 95%;
+  margin: 0 auto;
+  position: relative;
+  transition: transform 0.1s;
+  padding: 20px 0;
+}

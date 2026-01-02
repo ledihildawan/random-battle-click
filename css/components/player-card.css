@@ -1,0 +1,84 @@
+/* Component: PlayerCard */
+.players {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 10px;
+}
+.player-card {
+  background: var(--panel-bg);
+  color: var(--panel-text);
+  padding: 20px;
+  border-radius: var(--radius);
+  position: relative;
+  width: 45%;
+  box-shadow: 0 4px 0 var(--shadow);
+  transition: transform 0.2s;
+}
+.player-card.active-turn {
+  border: 4px solid var(--warning);
+  transform: translateY(-4px);
+}
+.player__media {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--glass);
+}
+.player__avatar {
+  width: 100px;
+  height: 100px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border: 4px solid var(--panel-text);
+  background: var(--panel-bg);
+}
+.player__avatar.is-dead {
+  filter: grayscale(100%) contrast(1.2);
+  opacity: 0.6;
+}
+.vs-badge {
+  background: var(--danger);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 4px 4px 0 var(--shadow);
+  z-index: 5;
+  transform: rotate(-10deg);
+}
+.identity-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+.player__name {
+  margin-top: 0;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 12px;
+  min-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hp-text {
+  text-align: center;
+  font-size: 10px;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+.nes-progress {
+  height: 20px;
+  border-radius: 0;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+}

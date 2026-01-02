@@ -1,8 +1,9 @@
-Vue.component('logs-terminal', {
-  template: /* html */ `
-    <div class="logs-terminal">
+export default {
+  name: 'logs-terminal',
+  template: `
+    <div class="logs-terminal" role="log" aria-live="polite">
       <p v-for="(log, index) in logs" :key="index" v-html="'> ' + log"></p>
-      <p v-if="logs.length === 0">Waiting for command...</p>
+      <p v-if="logs.length === 0">No activity yet.</p>
     </div>
   `,
   props: {
@@ -14,4 +15,4 @@ Vue.component('logs-terminal', {
       el.scrollTo({ left: 0, top: el.scrollHeight, behavior: 'smooth' });
     }
   },
-});
+};

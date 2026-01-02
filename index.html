@@ -8,8 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="./css/nes.css" />
-    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/main.css" />
   </head>
   <body>
     <div id="app" v-cloak>
@@ -21,11 +20,19 @@
       <div id="snow-container"></div>
 
       <transition name="fade">
-        <div v-if="cheatActivated" class="cheat-toast">🔓 GOD MODE ACTIVATED!</div>
+        <div v-if="cheatActivated" class="cheat-toast">🔓 God mode activated!</div>
       </transition>
 
       <div class="container" :class="{ 'shake-screen': globalShake }" v-show="!showSplash">
-        <h1 class="main-title">RETRO BATTLE</h1>
+        <h1 class="main-title">
+          <span class="line1">RETRO</span>
+          <span class="line2">BATTLE</span>
+        </h1>
+
+        <h1 class="splash-logo">
+          <span class="line1">RETRO</span>
+          <span class="line2">BATTLE</span>
+        </h1>
 
         <title-screen v-if="isTitleScreen" @start="goToSelectScreen"></title-screen>
 
@@ -99,18 +106,10 @@
       <div class="give-up-dialog-backdrop" v-if="status.giveUp || isDialogOpen"></div>
     </div>
 
-    <!-- Libraries and Components -->
+    <!-- Libraries and Services (components loaded via module) -->
     <script src="./js/vue.js"></script>
     <script src="./js/services/uiEffects.js"></script>
     <script src="./js/services/battleEngine.js"></script>
-    <script src="./js/components/SplashScreen.js"></script>
-    <script src="./js/components/TitleScreen.js"></script>
-    <script src="./js/components/SelectScreen.js"></script>
-    <script src="./js/components/LoadingScreen.js"></script>
-    <script src="./js/components/PlayerCard.js"></script>
-    <script src="./js/components/CommandCenter.js"></script>
-    <script src="./js/components/LogsTerminal.js"></script>
-    <script src="./js/components/GiveUpDialog.js"></script>
-    <script src="./js/script.js"></script>
+    <script type="module" src="./js/script.js"></script>
   </body>
 </html>

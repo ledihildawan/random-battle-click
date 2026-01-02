@@ -1,5 +1,6 @@
-Vue.component('player-card', {
-  template: /* html */ `
+export default {
+  name: 'player-card',
+  template: `
     <div class="player-card nes-container is-rounded" :class="{ 'active-turn': activeTurn }">
       <span class="identity-badge" :class="badgeClass">
         <span class="is-dark">{{ sideLabelLeft }}</span><span :class="sideLabelRightClass">{{ sideLabelRight }}</span>
@@ -10,7 +11,14 @@ Vue.component('player-card', {
             <span v-for="fxItem in fx" :key="fxItem.id" class="floating-text" :class="fxItem.type">{{ fxItem.text }}</span>
           </transition-group>
         </div>
-        <img class="player__avatar" :class="[imgClass, { 'is-dead': hp <= 0 }]" :src="player && player.avatar ? ('./img/players/' + player.avatar) : ''" alt="" width="100" height="100" />
+        <img
+          class="player__avatar"
+          :class="[imgClass, { 'is-dead': hp <= 0 }]"
+          :src="player && player.avatar ? ('./img/players/' + player.avatar) : ''"
+          :alt="player && player.name ? player.name : ''"
+          width="100"
+          height="100"
+        />
       </div>
       <p class="player__name" :class="{ 'secret-text': isSecret }">{{ player && player.name }}</p>
       <div class="hp-text">{{ hp }} / 100</div>
@@ -29,10 +37,10 @@ Vue.component('player-card', {
   },
   computed: {
     sideLabelLeft() {
-      return this.side === 'p1' ? 'P1' : 'CPU';
+      return this.side === 'p1' ? 'PLAYER' : 'CPU';
     },
     sideLabelRight() {
-      return this.side === 'p1' ? 'YOU' : 'ENEMY';
+      return this.side === 'p1' ? 'YOU' : 'OPPONENT';
     },
     sideLabelRightClass() {
       return this.side === 'p1' ? 'is-primary' : 'is-error';
@@ -50,4 +58,4 @@ Vue.component('player-card', {
       };
     },
   },
-});
+};
