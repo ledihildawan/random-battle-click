@@ -1,3 +1,22 @@
+import CommandCenter from './components/CommandCenter.js';
+import GiveUpDialog from './components/GiveUpDialog.js';
+import LoadingScreen from './components/LoadingScreen.js';
+import LogsTerminal from './components/LogsTerminal.js';
+import PlayerCard from './components/PlayerCard.js';
+import SelectScreen from './components/SelectScreen.js';
+import SplashScreen from './components/SplashScreen.js';
+import TitleScreen from './components/TitleScreen.js';
+
+// Register components (using global Vue provided by ./js/vue.js)
+Vue.component('splash-screen', SplashScreen);
+Vue.component('title-screen', TitleScreen);
+Vue.component('select-screen', SelectScreen);
+Vue.component('loading-screen', LoadingScreen);
+Vue.component('player-card', PlayerCard);
+Vue.component('command-center', CommandCenter);
+Vue.component('logs-terminal', LogsTerminal);
+Vue.component('give-up-dialog', GiveUpDialog);
+
 Vue.config.devtools = true;
 
 const app = new Vue({
@@ -76,13 +95,20 @@ const app = new Vue({
     setTimeout(() => {
       this.showSplash = false;
     }, 3000);
+
+    // Allow splash component to request an early skip
+    window.addEventListener('splash:skip', this._onSplashSkip);
   },
 
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeydown);
+    window.removeEventListener('splash:skip', this._onSplashSkip);
   },
 
   methods: {
+    _onSplashSkip(e) {
+      this.showSplash = false;
+    },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
       if (this.showSplash || this.status.loading) return;

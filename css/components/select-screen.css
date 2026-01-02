@@ -1,0 +1,73 @@
+/* Component: SelectScreen */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+.char-card {
+  background: var(--panel-bg);
+  border: 4px solid var(--border);
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.1s;
+  color: var(--panel-text);
+}
+.char-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+}
+.char-card.focused {
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px var(--accent);
+  z-index: 10;
+}
+.char-card.selected {
+  border-color: var(--warning);
+  background-color: var(--warning-bg);
+  transform: scale(1.05);
+  box-shadow: 0 0 10px var(--warning);
+}
+.char-card.is-secret {
+  background: var(--bg-color);
+  color: var(--warning);
+  border-color: var(--warning);
+  animation: glow 1.5s infinite alternate;
+}
+.secret-text {
+  color: var(--warning);
+  text-shadow: 1px 1px 0 var(--shadow);
+}
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px #f7d51d;
+  }
+  to {
+    box-shadow: 0 0 20px #f7d51d;
+  }
+}
+.char-card img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  display: block;
+  margin-bottom: 5px;
+}
+.char-name {
+  font-size: 8px;
+  margin: 0;
+}
+
+/* screen-select overrides */
+.screen-select .nes-container .title {
+  color: var(--panel-text) !important;
+  background-color: var(--panel-bg) !important;
+}
+.screen-select .nes-container > p {
+  color: var(--panel-text);
+}
+.screen-select {
+  padding-top: 20px;
+}

@@ -1,0 +1,56 @@
+/* Centralized theme variables for the project */
+:root {
+  /* Colors */
+  --bg-color: #212529;
+  --bg-grid: rgba(255, 255, 255, 0.05);
+  --text-color: #ffffff;
+  --panel-bg: #ffffff;
+  --panel-text: #212529;
+  --accent: #209cee;
+  --accent-2: #7be0ff;
+  --danger: #e76e55;
+  --warning: #f7d51d;
+  --success: #92cc41;
+  --muted: rgba(255, 255, 255, 0.6);
+  --glass: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.3);
+  --shadow: rgba(0, 0, 0, 0.5);
+
+  /* Common black/white and subtle helpers */
+  --black: #000000;
+  --white: #ffffff;
+  --white-08: rgba(255, 255, 255, 0.08);
+  --white-18: rgba(255, 255, 255, 0.18);
+  --bg-12: rgba(0, 0, 0, 0.12);
+  --shadow-60: rgba(0, 0, 0, 0.6);
+  --accent-weak: rgba(32, 158, 238, 0.14);
+  --red-weak: rgba(255, 0, 0, 0.06);
+  --green-weak: rgba(0, 255, 0, 0.02);
+  --blue-weak: rgba(0, 0, 255, 0.06);
+  --black-18: rgba(0, 0, 0, 0.18);
+  --black-03: rgba(0, 0, 0, 0.03);
+  --bg-35: rgba(0, 0, 0, 0.35);
+
+  /* Layout / spacing */
+  --radius: 4px;
+  --container-max-width: 800px;
+
+  /* Typography */
+  --font-family: 'Press Start 2P', cursive;
+}
+
+/* Handy aliases for light/dark themes (can be toggled later) */
+.theme-dark {
+  --bg-color: #0b0b0f;
+  --panel-bg: #121217;
+  --panel-text: #e6eef8;
+}
+
+/* Additional utility vars added to cover overlays and special cases */
+:root {
+  --overlay: rgba(0, 0, 0, 0.85);
+  --overlay-weak: rgba(0, 0, 0, 0.25);
+  --terminal-green: #33ff00;
+  --warning-bg: rgba(247, 213, 29, 0.12);
+  --muted-high: rgba(255, 255, 255, 0.9);
+}

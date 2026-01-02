@@ -1,0 +1,43 @@
+/* Component: CommandCenter */
+.control-panel {
+  background: var(--panel-bg);
+  color: var(--panel-text);
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.combat-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.actions__btn {
+  width: 150px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  transition: all 0.1s;
+}
+.actions__btn.focused,
+.nes-btn.focused {
+  border: 4px solid var(--warning);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 0 var(--shadow);
+  position: relative;
+  z-index: 10;
+}
+.is-disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  pointer-events: none;
+}
