@@ -4,30 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Retro Battle: Console Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="./css/nes.css" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
     <div id="app" v-cloak>
       <transition name="fade-slow">
-        <div v-if="showSplash" class="splash-screen">
-          <div class="splash-content">
-            <h1 class="splash-logo">RETRO<br />BATTLE<br />SYSTEM</h1>
-
-            <p class="splash-sub blink-anim">> CONNECTING TO SERVER...</p>
-
-            <div class="splash-loader-box">
-              <div class="splash-loader-bar"></div>
-            </div>
-
-            <p style="margin-top: 10px; font-size: 8px; color: #666; letter-spacing: 1px">
-              © 2025 VUE CORP. ALL RIGHTS RESERVED.
-            </p>
-          </div>
-        </div>
+        <splash-screen v-if="showSplash"></splash-screen>
       </transition>
 
       <div id="confetti-container"></div>
+      <div id="snow-container"></div>
 
       <transition name="fade">
         <div v-if="cheatActivated" class="cheat-toast">🔓 GOD MODE ACTIVATED!</div>
@@ -36,235 +27,90 @@
       <div class="container" :class="{ 'shake-screen': globalShake }" v-show="!showSplash">
         <h1 class="main-title">RETRO BATTLE</h1>
 
-        <div v-if="isTitleScreen" class="screen-title text-center fade-in">
-          <div class="nes-container is-dark with-title is-centered">
-            <p class="title">Insert Coin</p>
-            <p style="margin-bottom: 20px">Can you defeat the CPU?</p>
-            <button
-              type="button"
-              class="nes-btn is-primary blink-anim"
-              style="font-size: 20px; width: 100%"
-              @click="goToSelectScreen"
-            >
-              PRESS START <span class="key-hint">[ENTER]</span>
-            </button>
-          </div>
-          <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">
-            v6.0 Console Edition<br />
-            Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A
-          </div>
-        </div>
+        <title-screen v-if="isTitleScreen" @start="goToSelectScreen"></title-screen>
 
-        <div v-if="status.selecting" class="screen-select fade-in">
-          <div class="nes-container with-title is-centered">
-            <p class="title">Select Fighter</p>
-            <p style="font-size: 10px; margin-bottom: 15px">
-              Use <span class="key-hint">[ARROWS]</span> to Move, <span class="key-hint">[ENTER]</span> to Pick
-            </p>
+        <select-screen
+          v-if="status.selecting"
+          :players="players"
+          :temp-selection="tempSelection"
+          :focused-index="focusedCharIndex"
+          @select="clickSelectPlayer"
+          @confirm="confirmSelection"
+          @back="backToTitle"
+        ></select-screen>
 
-            <div class="character-grid">
-              <div
-                v-for="(player, index) in players"
-                :key="player.id"
-                class="char-card"
-                :class="{ 
-                  'selected': tempSelection && tempSelection.id === player.id,
-                  'focused': focusedCharIndex === index,
-                  'is-secret': player.isSecret 
-                }"
-                @click="clickSelectPlayer(player, index)"
-                @mouseover="focusedCharIndex = index"
-              >
-                <img :src="`./img/players/${player.avatar}`" :alt="player.name" />
-                <p class="char-name">{{ player.name.split(' ')[0] }}</p>
-              </div>
-            </div>
-
-            <div style="margin-top: 20px">
-              <button class="nes-btn" @click="backToTitle">Back <span class="key-hint">[ESC]</span></button>
-              <button
-                class="nes-btn is-success"
-                :class="{ 'is-disabled': !tempSelection }"
-                :disabled="!tempSelection"
-                @click="confirmSelection"
-              >
-                CONFIRM <span class="key-hint" v-if="tempSelection">[ENTER]</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="status.loading" class="screen-loading text-center">
-          <p style="margin-bottom: 10px">INITIALIZING BATTLE...</p>
-          <progress class="nes-progress is-pattern" :value="loadingProgress" max="100"></progress>
-        </div>
+        <loading-screen v-if="status.loading" :progress="loadingProgress"></loading-screen>
 
         <div v-if="status.play || status.winner" class="screen-battle fade-in">
           <div class="players">
-            <div
-              class="player-card nes-container is-rounded"
-              :class="{ 'active-turn': status.play && !turnInProgress && !status.winner }"
-            >
-              <span class="identity-badge badge-p1 nes-badge is-splited">
-                <span class="is-dark">P1</span><span class="is-primary">YOU</span>
-              </span>
-              <div class="player__media">
-                <div class="visual-fx-container">
-                  <transition-group name="float-up" tag="div">
-                    <span v-for="fx in activeFx.player1" :key="fx.id" class="floating-text" :class="fx.type"
-                      >{{ fx.text }}</span
-                    >
-                  </transition-group>
-                </div>
-                <img
-                  class="player__avatar player-1-img"
-                  :class="{ 'is-dead': health.player1 <= 0 }"
-                  :src="`./img/players/${selectedPlayer.player1.avatar}`"
-                  alt=""
-                />
-              </div>
-              <p class="player__name" :class="{ 'secret-text': selectedPlayer.player1.isSecret }">
-                {{ selectedPlayer.player1.name }}
-              </p>
-              <div class="hp-text">{{ health.player1 }} / 100</div>
-              <progress
-                class="nes-progress is-primary"
-                :value="health.player1"
-                max="100"
-                :class="healthBarColorStatus(health.player1)"
-              ></progress>
-            </div>
+            <player-card
+              side="p1"
+              :player="selectedPlayer.player1"
+              :hp="health.player1"
+              :fx="activeFx.player1"
+              :active-turn="status.play && !turnInProgress && !status.winner"
+              progress-theme="is-primary"
+              img-class="player-1-img"
+              :is-secret="selectedPlayer.player1 && selectedPlayer.player1.isSecret"
+            ></player-card>
 
             <div class="vs-badge">VS</div>
 
-            <div
-              class="player-card nes-container is-rounded"
-              :class="{ 'active-turn': status.play && turnInProgress && !status.winner }"
-            >
-              <span class="identity-badge badge-p2 nes-badge is-splited">
-                <span class="is-dark">CPU</span><span class="is-error">ENEMY</span>
-              </span>
-              <div class="player__media">
-                <div class="visual-fx-container">
-                  <transition-group name="float-up" tag="div">
-                    <span v-for="fx in activeFx.player2" :key="fx.id" class="floating-text" :class="fx.type"
-                      >{{ fx.text }}</span
-                    >
-                  </transition-group>
-                </div>
-                <img
-                  class="player__avatar player-2-img"
-                  :class="{ 'is-dead': health.player2 <= 0 }"
-                  :src="`./img/players/${selectedPlayer.player2.avatar}`"
-                  alt=""
-                />
-              </div>
-              <p class="player__name">{{ selectedPlayer.player2.name }}</p>
-              <div class="hp-text">{{ health.player2 }} / 100</div>
-              <progress
-                class="nes-progress is-error"
-                :value="health.player2"
-                max="100"
-                :class="healthBarColorStatus(health.player2)"
-              ></progress>
-            </div>
+            <player-card
+              side="cpu"
+              :player="selectedPlayer.player2"
+              :hp="health.player2"
+              :fx="activeFx.player2"
+              :active-turn="status.play && turnInProgress && !status.winner"
+              progress-theme="is-error"
+              img-class="player-2-img"
+            ></player-card>
           </div>
 
           <div class="nes-container with-title is-centered control-panel">
             <p class="title">Command Center</p>
-            <div class="actions">
-              <div class="combat-buttons" v-if="!status.winner">
-                <button
-                  type="button"
-                  class="nes-btn is-error actions__btn"
-                  :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 0 }"
-                  @click="playerAttack('normal')"
-                  @mouseover="battleMenuIndex = 0"
-                >
-                  <div>🗡️ Attack <span class="key-hint">[1]</span></div>
-                  <div class="btn-subtext">Low Risk</div>
-                </button>
-
-                <button
-                  type="button"
-                  class="nes-btn is-warning actions__btn"
-                  :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 1 }"
-                  @click="playerAttack('special')"
-                  @mouseover="battleMenuIndex = 1"
-                >
-                  <div>✨ Special <span class="key-hint">[2]</span></div>
-                  <div class="btn-subtext">High Risk</div>
-                </button>
-
-                <button
-                  type="button"
-                  class="nes-btn is-success actions__btn"
-                  :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress, 'focused': battleMenuIndex === 2 }"
-                  @click="playerHeal"
-                  @mouseover="battleMenuIndex = 2"
-                >
-                  <div>💊 Heal <span class="key-hint">[3]</span></div>
-                  <div class="btn-subtext">{{ limit.heal - tracker.playerHeal }} Left</div>
-                </button>
-              </div>
-
-              <div class="combat-buttons" v-else>
-                <button
-                  class="nes-btn is-primary"
-                  :class="{'focused': battleMenuIndex === 0}"
-                  @click="goToSelectScreen"
-                  @mouseover="battleMenuIndex=0"
-                >
-                  New Fighter <span class="key-hint">[ENTER]</span>
-                </button>
-                <button
-                  class="nes-btn"
-                  :class="{'focused': battleMenuIndex === 1}"
-                  @click="reBattle"
-                  @mouseover="battleMenuIndex=1"
-                >
-                  Rematch <span class="key-hint">[R]</span>
-                </button>
-                <button
-                  class="nes-btn is-error"
-                  :class="{'focused': battleMenuIndex === 2}"
-                  @click="backToTitle"
-                  @mouseover="battleMenuIndex=2"
-                >
-                  Exit <span class="key-hint">[ESC]</span>
-                </button>
-              </div>
-            </div>
+            <command-center
+              :winner="status.winner"
+              :turn-in-progress="turnInProgress"
+              :battle-menu-index="battleMenuIndex"
+              :health="health"
+              :limit="limit"
+              :tracker="tracker"
+              @attack-normal="playerAttack('normal')"
+              @attack-special="playerAttack('special')"
+              @heal="playerHeal"
+              @new="goToSelectScreen"
+              @rematch="reBattle"
+              @exit="backToTitle"
+              @hover-index="battleMenuIndex = $event"
+            ></command-center>
           </div>
 
           <div class="logs-container">
             <div class="nes-container is-dark with-title">
               <p class="title">Battle Log</p>
-              <div class="logs-terminal">
-                <p v-for="(log, index) in logs" :key="index" v-html="`> ` + log"></p>
-                <p v-if="logs.length === 0">Waiting for command...</p>
-              </div>
+              <logs-terminal :logs="logs"></logs-terminal>
             </div>
           </div>
         </div>
       </div>
 
-      <dialog class="nes-dialog give-up-dialog" id="give-up-dialog">
-        <form method="dialog">
-          <p class="title">Surrender?</p>
-          <menu class="dialog-menu">
-            <button class="nes-btn" @click.prevent="hideDialogGiveUp">
-              Cancel <span class="key-hint">[ESC]</span>
-            </button>
-            <button class="nes-btn is-error" @click="giveUp">Confirm <span class="key-hint">[ENTER]</span></button>
-          </menu>
-        </form>
-      </dialog>
-
+      <give-up-dialog :open="isDialogOpen" @cancel="hideDialogGiveUp" @confirm="giveUp"></give-up-dialog>
       <div class="give-up-dialog-backdrop" v-if="status.giveUp || isDialogOpen"></div>
     </div>
 
+    <!-- Libraries and Components -->
     <script src="./js/vue.js"></script>
+    <script src="./js/services/uiEffects.js"></script>
+    <script src="./js/services/battleEngine.js"></script>
+    <script src="./js/components/SplashScreen.js"></script>
+    <script src="./js/components/TitleScreen.js"></script>
+    <script src="./js/components/SelectScreen.js"></script>
+    <script src="./js/components/LoadingScreen.js"></script>
+    <script src="./js/components/PlayerCard.js"></script>
+    <script src="./js/components/CommandCenter.js"></script>
+    <script src="./js/components/LogsTerminal.js"></script>
+    <script src="./js/components/GiveUpDialog.js"></script>
     <script src="./js/script.js"></script>
   </body>
 </html>

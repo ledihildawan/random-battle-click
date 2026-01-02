@@ -112,6 +112,7 @@ body {
   position: relative;
   box-shadow: 4px 4px 0px #000;
 }
+
 .splash-loader-bar {
   height: 100%;
   background-color: #209cee;
@@ -139,6 +140,7 @@ body {
     transform: skew(0deg);
   }
 }
+
 @keyframes loadProgress {
   0% {
     width: 0%;
@@ -309,10 +311,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  background: rgba(255, 255, 255, 0.05);
 }
 .player__avatar {
   width: 100px;
   height: 100px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   image-rendering: pixelated;
   border: 4px solid #212529;
@@ -509,6 +513,7 @@ body {
 .floating-text.miss {
   color: #aaa;
 }
+
 .float-up-enter-active {
   transition: all 0.8s ease-out;
 }
@@ -520,6 +525,7 @@ body {
   opacity: 0;
   transform: translate(-50%, -50px);
 }
+/* Container harus menutupi layar tanpa mengganggu klik */
 #confetti-container {
   position: fixed;
   top: 0;
@@ -527,18 +533,35 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 999;
+  overflow: hidden;
 }
+
 .confetti {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  background-color: #f00;
-  animation: fall linear forwards;
+  top: -20px;
+  perspective: 500px;
 }
-@keyframes fall {
-  to {
-    transform: translateY(100vh) rotate(720deg);
+
+/* Animasi Jatuh dengan Rotasi 3D */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotateX(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateX(360deg) rotateY(720deg);
+    opacity: 0.7;
+  }
+}
+
+/* Animasi Ayunan Samping (Hambatan Udara) */
+@keyframes confetti-sway {
+  0% {
+    margin-left: -20px;
+  }
+  100% {
+    margin-left: 20px;
   }
 }
 
@@ -579,32 +602,56 @@ body {
   text-align: center;
 }
 
-@media (max-width: 600px) {
-  .players {
-    flex-direction: column;
-    gap: 30px;
+.screen-select .nes-container .title {
+  color: #212529 !important;
+  background-color: #fff !important;
+}
+
+.screen-select .nes-container > p {
+  color: #212529;
+}
+
+.screen-select {
+  padding-top: 20px;
+}
+
+/* --- REALISTIC RETRO SNOW --- */
+#snow-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Memastikan klik menembus salju ke tombol di bawahnya */
+  z-index: -1; /* Diubah ke -1 agar berada di belakang seluruh layout */
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.snow-pixel {
+  position: absolute;
+  background-color: #fff;
+  top: -10px;
+  /* Animasi jatuh dan goyangan */
+  animation: fall linear infinite, sway ease-in-out infinite;
+  opacity: 0.8; /* Opsional: sedikit transparan agar lebih menyatu */
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10px);
   }
-  .player-card {
-    width: 100%;
+  100% {
+    transform: translateY(110vh);
   }
-  .vs-badge {
-    margin: 10px 0;
-    transform: rotate(0);
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    margin-left: 0;
   }
-  .combat-buttons {
-    flex-direction: column;
-    width: 100%;
-  }
-  .actions__btn {
-    width: 100%;
-  }
-  .character-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .splash-logo {
-    font-size: 28px;
-  }
-  .splash-loader-box {
-    width: 240px;
+  50% {
+    margin-left: 20px;
   }
 }
