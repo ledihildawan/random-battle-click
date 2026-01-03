@@ -1,115 +1,655 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle: Console Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Your Life in Days</title>
+    <meta name="description" content="A minimal visualization of your life — one day at a time." />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
 
-    <link rel="stylesheet" href="./css/main.css" />
+    <style>
+      :root {
+        --gap: 3px;
+        --frame: 6px;
+        --rad: 1.5px;
+        --bg: #0d0d0d;
+        --c-out: #111111;
+        --c-past: #2d2d2d;
+        --c-future: #1e1e1e;
+        --c-today: #ffffff;
+        --glow-outline: rgba(255, 255, 255, 0.6);
+        --glow-fill: rgba(255, 255, 255, 0.3);
+        --today-inner-ring: rgba(255, 255, 255, 0.5);
+        --today-pulse: rgba(255, 255, 255, 0.4);
+        --spotlight-bg: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 65%);
+        --tt-bg: rgba(15, 15, 15, 0.92);
+        --tt-brd: rgba(255, 255, 255, 0.2);
+        --tt-txt: #ffffff;
+        --tt-shd: 0 15px 40px rgba(0, 0, 0, 0.6);
+        --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f8f8f8;
+          --c-out: #f0f0f0;
+          --c-past: #d0d0d0;
+          --c-future: #e0e0e0;
+          --c-today: #000000;
+          --glow-outline: rgba(0, 0, 0, 0.6);
+          --glow-fill: rgba(0, 0, 0, 0.3);
+          --today-inner-ring: rgba(0, 0, 0, 0.5);
+          --today-pulse: rgba(0, 0, 0, 0.4);
+          --spotlight-bg: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 60%);
+          --tt-bg: rgba(255, 255, 255, 0.92);
+          --tt-brd: rgba(0, 0, 0, 0.2);
+          --tt-txt: #000000;
+          --tt-shd: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+      }
+
+      @media (max-width: 480px) {
+        :root {
+          --gap: 2px;
+          --frame: 4px;
+        }
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg);
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--frame);
+        transition: background-color 0.6s var(--ease-out);
+        background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%),
+          url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      }
+
+      @media (prefers-color-scheme: light) {
+        body {
+          background-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.02) 0%, transparent 70%),
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      }
+
+      #spotlight {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 450px;
+        height: 450px;
+        background: var(--spotlight-bg);
+        transform: translate3d(-50%, -50%, 0);
+        pointer-events: none;
+        z-index: 1;
+        display: none;
+        will-change: transform, opacity, width, height;
+        transition: opacity 0.4s ease, width 0.8s var(--ease-out), height 0.8s var(--ease-out);
+        border-radius: 50%;
+      }
+
+      #spotlight.absorbed {
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0.8;
+      }
+
+      #grid {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        gap: var(--gap);
+        touch-action: none;
+        outline: none;
+        opacity: 0;
+        animation: fadeInGrid 0.8s ease-out forwards 0.6s;
+      }
+
+      @keyframes fadeInGrid {
+        to {
+          opacity: 1;
+        }
+      }
+
+      #grid.locked {
+        pointer-events: none !important;
+        cursor: wait;
+      }
+
+      @keyframes popIn {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: inset 0 0 15px var(--glow-fill);
+        }
+        50% {
+          box-shadow: inset 0 0 28px var(--today-pulse);
+        }
+      }
+
+      @keyframes heartbeat {
+        0%,
+        100% {
+          box-shadow: inset 0 0 30px var(--today-pulse);
+        }
+        50% {
+          box-shadow: inset 0 0 50px var(--today-pulse);
+        }
+      }
+
+      .day {
+        position: relative;
+        background-color: var(--c-future);
+        border-radius: var(--rad);
+        contain: strict;
+        opacity: 0;
+        animation: popIn 0.6s var(--ease-out) forwards;
+        outline: none;
+        cursor: default;
+        transition: background-color 0.8s var(--ease-out), box-shadow 0.8s var(--ease-out);
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: opacity, background-color, box-shadow;
+      }
+
+      .day.past {
+        background-color: var(--c-past);
+      }
+      .day.out {
+        background-color: var(--c-out);
+      }
+
+      .day.today {
+        background-color: var(--c-today);
+        z-index: 2;
+        animation: popIn 0.6s var(--ease-out) forwards, pulse 5s infinite ease-in-out,
+          heartbeat 10s infinite ease-in-out;
+        animation-delay: 0.5s, 0.5s, 0.5s;
+        box-shadow: inset 0 0 0 2px var(--today-inner-ring), inset 0 0 15px var(--glow-fill),
+          inset 0 0 30px var(--today-pulse);
+      }
+
+      body.mouse-mode .day.active,
+      body.keyboard-mode .day:focus {
+        box-shadow: inset 0 0 0 2px var(--glow-outline), inset 0 0 20px var(--glow-outline);
+        z-index: 20;
+        transition-duration: 0.3s;
+      }
+
+      .day.selected {
+        background-color: var(--c-today) !important;
+        box-shadow: inset 0 0 12px var(--glow-fill), inset 0 0 20px var(--glow-outline);
+        z-index: 20;
+      }
+
+      body.mouse-mode .day:focus {
+        outline: none;
+      }
+
+      /* ⭐ TOOLTIP MOBILE DIPERBAIKI */
+      #tooltip {
+        position: fixed;
+        z-index: 999;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--tt-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 0.5px solid var(--tt-brd);
+        box-shadow: var(--tt-shd), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        color: var(--tt-txt);
+        white-space: nowrap;
+        opacity: 0;
+        padding: 11px 20px;
+        border-radius: 10px;
+        will-change: transform, opacity;
+        transition: opacity 0.4s ease 0.3s, transform 0.4s var(--ease-out) 0.3s;
+      }
+
+      #tooltip.on {
+        opacity: 1;
+      }
+
+      #txt {
+        font-size: 13.5px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        text-align: center;
+      }
+
+      /* MOBILE: Tooltip di bawah, pill shape, tidak overflow */
+      @media (max-width: 768px) {
+        #tooltip {
+          left: 50%;
+          bottom: 20px;
+          right: auto;
+          top: auto;
+          transform: translateX(-50%) scale(0.9);
+          padding: 14px 24px;
+          border-radius: 99px;
+          min-width: auto;
+          max-width: 90vw;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        #tooltip.on {
+          transform: translateX(-50%) scale(1);
+        }
+
+        #txt {
+          font-size: 14px;
+        }
+      }
+    </style>
   </head>
-  <body>
-    <div id="app" v-cloak>
-      <transition name="fade-slow">
-        <splash-screen v-if="showSplash"></splash-screen>
-      </transition>
+  <body class="mouse-mode">
+    <div id="spotlight"></div>
+    <div id="grid" role="application" aria-label="Interactive Calendar"></div>
+    <div id="tooltip"><span id="txt"></span></div>
 
-      <div id="confetti-container"></div>
-      <div id="snow-container"></div>
+    <script>
+      // Script tetap sama seperti versi sebelumnya (yang sudah anti-stuck)
+      (() => {
+        'use strict';
 
-      <transition name="fade">
-        <div v-if="cheatActivated" class="cheat-toast">🔓 God mode activated!</div>
-      </transition>
+        const DOM = {
+          grid: document.getElementById('grid'),
+          spotlight: document.getElementById('spotlight'),
+          tt: document.getElementById('tooltip'),
+          txt: document.getElementById('txt'),
+        };
 
-      <div class="container" :class="{ 'shake-screen': globalShake }" v-show="!showSplash">
-        <h1 class="main-title">
-          <span class="line1">RETRO</span>
-          <span class="line2">BATTLE</span>
-        </h1>
+        const fmt = new Intl.DateTimeFormat('id-ID', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
 
-        <h1 class="splash-logo">
-          <span class="line1">RETRO</span>
-          <span class="line2">BATTLE</span>
-        </h1>
+        let gridData = [];
+        let mouse = { x: -1000, y: -1000 };
+        let lastMouse = { x: -1000, y: -1000 };
+        let currentCols = 0,
+          cellCount = 0,
+          todayIdx = -1;
+        let idleTimer = null,
+          motionTimer = null,
+          tooltipTimer = null;
+        let lastHoveredEl = null;
+        let selectedEl = null;
 
-        <title-screen v-if="isTitleScreen" @start="goToSelectScreen"></title-screen>
+        const IDLE_TIMEOUT = 5000;
+        const MOTION_STOP_DELAY = 200;
+        const TOOLTIP_DELAY_AFTER_FILL = 300;
 
-        <select-screen
-          v-if="status.selecting"
-          :players="players"
-          :temp-selection="tempSelection"
-          :focused-index="focusedCharIndex"
-          @select="clickSelectPlayer"
-          @confirm="confirmSelection"
-          @back="backToTitle"
-        ></select-screen>
+        let loadingComplete = false;
 
-        <loading-screen v-if="status.loading" :progress="loadingProgress"></loading-screen>
+        function calculateBestFit() {
+          const styles = getComputedStyle(document.body);
+          const cssGap = parseFloat(styles.getPropertyValue('--gap')) || 0;
+          const cssFrame = parseFloat(styles.getPropertyValue('--frame')) || 0;
+          const availableW = window.innerWidth - cssFrame * 2;
+          const availableH = window.innerHeight - cssFrame * 2;
+          const now = new Date();
+          const year = now.getFullYear();
+          const totalDays = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 366 : 365;
 
-        <div v-if="status.play || status.winner" class="screen-battle fade-in">
-          <div class="players">
-            <player-card
-              side="p1"
-              :player="selectedPlayer.player1"
-              :hp="health.player1"
-              :fx="activeFx.player1"
-              :active-turn="status.play && !turnInProgress && !status.winner"
-              progress-theme="is-primary"
-              img-class="player-1-img"
-              :is-secret="selectedPlayer.player1 && selectedPlayer.player1.isSecret"
-            ></player-card>
+          let bestDiff = Infinity;
+          let bestCols = 5;
 
-            <div class="vs-badge">VS</div>
+          for (let c = 3; c <= 80; c++) {
+            const r = Math.ceil(totalDays / c);
+            const totalGapW = cssGap * (c - 1);
+            const totalGapH = cssGap * (r - 1);
 
-            <player-card
-              side="cpu"
-              :player="selectedPlayer.player2"
-              :hp="health.player2"
-              :fx="activeFx.player2"
-              :active-turn="status.play && turnInProgress && !status.winner"
-              progress-theme="is-error"
-              img-class="player-2-img"
-            ></player-card>
-          </div>
+            if (totalGapW >= availableW || totalGapH >= availableH) break;
 
-          <div class="nes-container with-title is-centered control-panel">
-            <p class="title">Command Center</p>
-            <command-center
-              :winner="status.winner"
-              :turn-in-progress="turnInProgress"
-              :battle-menu-index="battleMenuIndex"
-              :health="health"
-              :limit="limit"
-              :tracker="tracker"
-              @attack-normal="playerAttack('normal')"
-              @attack-special="playerAttack('special')"
-              @heal="playerHeal"
-              @new="goToSelectScreen"
-              @rematch="reBattle"
-              @exit="backToTitle"
-              @hover-index="battleMenuIndex = $event"
-            ></command-center>
-          </div>
+            const cellW = (availableW - totalGapW) / c;
+            const cellH = (availableH - totalGapH) / r;
 
-          <div class="logs-container">
-            <div class="nes-container is-dark with-title">
-              <p class="title">Battle Log</p>
-              <logs-terminal :logs="logs"></logs-terminal>
-            </div>
-          </div>
-        </div>
-      </div>
+            if (cellW < 2 || cellH < 2) break;
 
-      <give-up-dialog :open="isDialogOpen" @cancel="hideDialogGiveUp" @confirm="giveUp"></give-up-dialog>
-      <div class="give-up-dialog-backdrop" v-if="status.giveUp || isDialogOpen"></div>
-    </div>
+            const ratio = Math.max(cellW, cellH) / Math.min(cellW, cellH);
+            const diff = ratio - 1;
 
-    <!-- Libraries and Services (components loaded via module) -->
-    <script src="./js/vue.js"></script>
-    <script src="./js/services/uiEffects.js"></script>
-    <script src="./js/services/battleEngine.js"></script>
-    <script type="module" src="./js/script.js"></script>
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestCols = c;
+            }
+          }
+
+          return {
+            cols: bestCols,
+            rows: Math.ceil(totalDays / bestCols),
+            totalDays,
+            year,
+            now: now.setHours(0, 0, 0, 0),
+          };
+        }
+
+        function render() {
+          DOM.grid.classList.add('locked');
+          loadingComplete = false;
+
+          const fit = calculateBestFit();
+          const { cols, rows, totalDays, year, now } = fit;
+
+          currentCols = cols;
+          cellCount = cols * rows;
+
+          const padStart = Math.floor((cellCount - totalDays) / 2);
+          const date = new Date(year, 0, 1);
+          date.setDate(date.getDate() - padStart);
+
+          DOM.grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+          DOM.grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+          const frag = document.createDocumentFragment();
+          gridData = new Array(cellCount);
+          todayIdx = -1;
+
+          for (let i = 0; i < cellCount; i++) {
+            const el = document.createElement('div');
+            let cls = 'day';
+            const iterY = date.getFullYear();
+            const iterT = date.getTime();
+
+            if (iterY !== year) cls += ' out';
+            else if (iterT === now) {
+              cls += ' today';
+              todayIdx = i;
+            } else if (iterT < now) cls += ' past';
+
+            el.className = cls;
+            el._i = i;
+            el.setAttribute('tabindex', '-1');
+            el.setAttribute('role', 'button');
+            el.setAttribute('aria-label', fmt.format(date));
+            el.style.animationDelay = `${i * 1.2}ms`;
+
+            gridData[i] = fmt.format(date);
+
+            frag.appendChild(el);
+            date.setDate(date.getDate() + 1);
+          }
+
+          DOM.grid.replaceChildren(frag);
+
+          const initialFocus = todayIdx !== -1 ? todayIdx : 0;
+          if (DOM.grid.children[initialFocus]) {
+            DOM.grid.children[initialFocus].setAttribute('tabindex', '0');
+          }
+
+          setTimeout(() => {
+            DOM.grid.classList.remove('locked');
+            loadingComplete = true;
+          }, cellCount * 1.2 + 600);
+        }
+
+        function updateTabIndex(element) {
+          const prev = DOM.grid.querySelector('[tabindex="0"]');
+          if (prev) prev.setAttribute('tabindex', '-1');
+          element.setAttribute('tabindex', '0');
+        }
+
+        function hideActiveState() {
+          clearTimeout(tooltipTimer);
+          DOM.tt.classList.remove('on');
+          DOM.spotlight.classList.remove('absorbed');
+          DOM.spotlight.style.opacity = '0';
+
+          DOM.grid.querySelectorAll('.day.active').forEach((el) => el.classList.remove('active'));
+          if (selectedEl) selectedEl.classList.remove('selected');
+          selectedEl = null;
+          lastHoveredEl = null;
+
+          const todayEl = DOM.grid.children[todayIdx];
+          if (todayEl) updateTabIndex(todayEl);
+
+          setTimeout(() => (DOM.spotlight.style.display = 'none'), 400);
+        }
+
+        function setText(text) {
+          DOM.txt.innerText = text;
+        }
+
+        function updateTooltipPosition(element) {
+          // Di mobile, tooltip sudah fixed bottom, tidak perlu update posisi dinamis
+          if (window.innerWidth <= 768) return;
+
+          const elRect = element.getBoundingClientRect();
+          const ttRect = DOM.tt.getBoundingClientRect();
+          let tx = elRect.left + elRect.width / 2 - ttRect.width / 2;
+          let ty = elRect.top - ttRect.height - 12;
+
+          if (ty < 10) ty = elRect.bottom + 12;
+          if (tx < 10) tx = 10;
+          if (tx + ttRect.width > window.innerWidth - 10) tx = window.innerWidth - ttRect.width - 10;
+
+          DOM.tt.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+        }
+
+        function selectDay(element) {
+          const text = gridData[element._i];
+
+          if (selectedEl) selectedEl.classList.remove('selected');
+          element.classList.add('selected');
+          selectedEl = element;
+
+          DOM.spotlight.classList.add('absorbed');
+
+          setText(text);
+
+          updateTooltipPosition(element);
+
+          clearTimeout(tooltipTimer);
+          tooltipTimer = setTimeout(() => {
+            DOM.tt.classList.add('on');
+          }, TOOLTIP_DELAY_AFTER_FILL);
+        }
+
+        function showTodayTooltip(element) {
+          DOM.spotlight.style.opacity = '0';
+          setTimeout(() => {
+            if (!DOM.tt.classList.contains('on')) {
+              DOM.spotlight.style.display = 'none';
+            }
+          }, 400);
+
+          setText(gridData[element._i]);
+          updateTooltipPosition(element);
+          DOM.tt.classList.add('on');
+        }
+
+        function tryShowTooltip(target) {
+          clearTimeout(motionTimer);
+          motionTimer = setTimeout(() => {
+            selectDay(target);
+          }, MOTION_STOP_DELAY);
+        }
+
+        function setActiveCell(target) {
+          if (lastHoveredEl && lastHoveredEl !== target) {
+            lastHoveredEl.classList.remove('active');
+          }
+          target.classList.add('active');
+          lastHoveredEl = target;
+          updateTabIndex(target);
+          target.focus();
+        }
+
+        let mouseTicking = false;
+        window.addEventListener(
+          'mousemove',
+          (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(hideActiveState, IDLE_TIMEOUT);
+
+            if (loadingComplete && window.innerWidth > 768) {
+              DOM.spotlight.style.display = 'block';
+              DOM.spotlight.style.opacity = '1';
+              DOM.spotlight.classList.remove('absorbed');
+            }
+
+            if (!mouseTicking) {
+              requestAnimationFrame(() => {
+                if (window.innerWidth > 768 && loadingComplete) {
+                  DOM.spotlight.style.transform = `translate3d(${mouse.x}px, ${mouse.y}px, 0) translate(-50%, -50%)`;
+
+                  const target = document.elementFromPoint(mouse.x, mouse.y);
+
+                  if (target && target.classList.contains('day')) {
+                    setActiveCell(target);
+
+                    if (target.classList.contains('today')) {
+                      clearTimeout(motionTimer);
+                      showTodayTooltip(target);
+                    } else {
+                      clearTimeout(motionTimer);
+                      if (Math.abs(mouse.x - lastMouse.x) < 3 && Math.abs(mouse.y - lastMouse.y) < 3) {
+                        tryShowTooltip(target);
+                      }
+                    }
+
+                    lastMouse.x = mouse.x;
+                    lastMouse.y = mouse.y;
+                  } else {
+                    clearTimeout(motionTimer);
+                    clearTimeout(tooltipTimer);
+                    DOM.tt.classList.remove('on');
+                    if (selectedEl) {
+                      selectedEl.classList.remove('selected');
+                      selectedEl = null;
+                    }
+                    if (lastHoveredEl) {
+                      lastHoveredEl.classList.remove('active');
+                      lastHoveredEl = null;
+                    }
+                  }
+                }
+                mouseTicking = false;
+              });
+              mouseTicking = true;
+            }
+          },
+          { passive: true }
+        );
+
+        DOM.grid.addEventListener('mouseleave', () => {
+          clearTimeout(idleTimer);
+          clearTimeout(motionTimer);
+          clearTimeout(tooltipTimer);
+          hideActiveState();
+        });
+
+        DOM.grid.addEventListener('click', (e) => {
+          if (e.target.classList.contains('day')) {
+            updateTabIndex(e.target);
+            e.target.focus();
+            selectDay(e.target);
+          }
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            hideActiveState();
+
+            const todayEl = DOM.grid.children[todayIdx];
+            if (todayEl) {
+              updateTabIndex(todayEl);
+              todayEl.focus();
+            }
+            return;
+          }
+
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            DOM.tt.classList.remove('on');
+            clearTimeout(motionTimer);
+            clearTimeout(tooltipTimer);
+          }
+
+          if (!DOM.grid.contains(document.activeElement) && e.key !== 'Tab') return;
+          if (!e.target.classList.contains('day')) return;
+
+          const currentIndex = e.target._i;
+          let nextIndex = null;
+
+          document.body.classList.replace('mouse-mode', 'keyboard-mode');
+
+          switch (e.key) {
+            case 'ArrowRight':
+              e.preventDefault();
+              nextIndex = currentIndex + 1;
+              break;
+            case 'ArrowLeft':
+              e.preventDefault();
+              nextIndex = currentIndex - 1;
+              break;
+            case 'ArrowDown':
+              e.preventDefault();
+              nextIndex = currentIndex + currentCols;
+              break;
+            case 'ArrowUp':
+              e.preventDefault();
+              nextIndex = currentIndex - currentCols;
+              break;
+            case 'Enter':
+            case ' ':
+              e.preventDefault();
+              selectDay(e.target);
+              return;
+          }
+
+          if (nextIndex !== null && nextIndex >= 0 && nextIndex < cellCount) {
+            const nextEl = DOM.grid.children[nextIndex];
+            if (nextEl) {
+              updateTabIndex(nextEl);
+              nextEl.focus();
+            }
+          }
+        });
+
+        render();
+        new ResizeObserver(() => render()).observe(document.body);
+      })();
+    </script>
   </body>
 </html>
