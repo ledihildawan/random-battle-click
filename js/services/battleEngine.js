@@ -312,7 +312,6 @@ function resolveAction(app, { side, action }) {
   }
 
   if (action === 'special') {
-    app.specialMeter[side] = 0;
     // Pity rule: a missed special guarantees the next one connects
     const guaranteed = app.specialPity[side];
     app.specialPity[side] = false;
@@ -320,13 +319,13 @@ function resolveAction(app, { side, action }) {
     if (missed) {
       app.specialPity[side] = true;
       app.combo[side] = 0;
-      gainMeter(app, { side, amount: BALANCE.special.meterGainWhiff });
       UIEffects.spawnFloatingText(app, { target: other(side), text: 'MISS', type: 'miss' });
       createLog(app, {
         text: isPlayer(side) ? `WHIFF! Your Special missed! (next one can't miss)` : `${enemyName}'s Special WHIFFED!`,
         icon: 'wind',
       });
       Sound.play('miss');
+      app.specialMeter[side] = 0;
       return;
     }
     const attacker = app.selectedPlayer[side];
@@ -335,6 +334,8 @@ function resolveAction(app, { side, action }) {
     if (signature) UIEffects.spawnSpecialFx(attacker.id, willCombo >= 3);
     const dmg = calcDamage(BALANCE.special.min, BALANCE.special.max) * godMultiplier(app, side);
     applyDamage(app, { side, dmg, type: 'special', isCrit: false, moveName: signature ? signature.move : null });
+    // A special costs the full bar: zeroed after resolve so landing gains cannot refund it
+    app.specialMeter[side] = 0;
     return;
   }
 
