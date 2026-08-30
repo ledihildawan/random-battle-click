@@ -150,6 +150,7 @@ const app = new Vue({
       difficulty: 'normal',
       arcade: { active: false, stage: 0, totalStages: 5, ladder: [], hpCarry: 100 },
       arcadeStageClear: false,
+      arcadeSelecting: false,
       roundWins: { player1: 0, player2: 0 },
       currentRound: 1,
       roundIntro: false,
@@ -297,27 +298,15 @@ const app = new Vue({
     startArcade() {
       if (this.isTitleScreen) {
         Sound.play('select');
-        const pool = this.players.filter((p) => !p.isSecret);
-        const fighter = pool[Math.floor(Math.random() * pool.length)];
-        const ladder = pool
-          .filter((p) => p.id !== fighter.id)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-        this.selectedPlayer.player1 = { ...fighter, isChampion: false };
-        this.arcade = { active: true, stage: 0, totalStages: ladder.length, ladder, hpCarry: 100 };
-        this.status.selecting = false;
-        this.status.play = false;
-        this.status.winner = false;
-        this.startArcadeStage();
+        this.arcadeSelecting = true;
+        this.goToSelectScreen();
       }
     },
-    startArcadeStage() {
-      const opponent = this.arcade.ladder[this.arcade.stage];
-      if (!opponent) {
-        this.arcade.active = false;
-        this.status.winner = true;
-        return;
-      }
+
+    beginArcadeRun() {
+      const pool = this.players.filter((p) => !p.isSecret && p.id !== this.selectedPlayer.player1.id);
+      const ladder = pool.sort(() => Math.random() - 0.5);
+      this.arcade = { active: true, stage: 0, totalStages: ladder.length, ladder, hpCarry: 100 };
       Sound.play('fight');
       this.status.winner = false;
       this.startLoading();
@@ -347,7 +336,6 @@ const app = new Vue({
 
         if (e.key === 'Enter') this.goToSelectScreen();
         if (key === 'a') this.startArcade();
-        if (key === 'd') this.cycleDifficulty();
         if (key === 's') this.viewingStats = true;
         return;
       }
@@ -366,6 +354,7 @@ const app = new Vue({
         if (e.key === 'ArrowDown') this.moveGridFocus(0, 1);
         if (e.key === 'ArrowUp') this.moveGridFocus(0, -1);
         if (key === 'r') this.cycleRounds();
+        if (key === 'd') this.cycleDifficulty();
         if (e.key === ' ') this.pickRandomFighter();
         if (e.key === 'Enter') this.confirmSelection();
         if (e.key === 'Escape') this.backToTitle();
@@ -507,6 +496,7 @@ const app = new Vue({
       this.selectConfirm = null;
       this.arcade.active = false;
       this.arcadeStageClear = false;
+      this.arcadeSelecting = false;
       this.tempSelection = this.players[0];
       this.focusedCharIndex = 0;
     },
@@ -529,7 +519,12 @@ const app = new Vue({
         this.selectedPlayer.player1 = { ...this.tempSelection, isChampion: false };
         this.status.selecting = false;
         this.selectConfirm = null;
-        this.startLoading();
+        if (this.arcadeSelecting) {
+          this.arcadeSelecting = false;
+          this.beginArcadeRun();
+        } else {
+          this.startLoading();
+        }
       }, 380);
     },
 
@@ -551,6 +546,7 @@ const app = new Vue({
       this.turnBanner = null;
       this.arcade.active = false;
       this.arcadeStageClear = false;
+      this.arcadeSelecting = false;
       clearTimeout(this._introTimer);
       clearTimeout(this._fightSoundTimer);
       clearTimeout(this._koTimer);

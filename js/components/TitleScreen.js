@@ -19,9 +19,6 @@ export default {
           <button type="button" class="nes-btn is-error" @click="$emit('arcade')">
             <pixel-icon name="trophy" :size="12"></pixel-icon> Arcade <span class="key-hint">[A]</span>
           </button>
-          <button type="button" class="nes-btn" @click="$emit('cycle-difficulty')">
-            <pixel-icon name="sword" :size="12"></pixel-icon> {{ difficultyLabel }} <span class="key-hint">[D]</span>
-          </button>
           <button type="button" class="nes-btn is-primary" @click="$emit('view-stats')">
             <pixel-icon name="star" :size="12"></pixel-icon> Stats <span class="key-hint">[S]</span>
           </button>
@@ -50,7 +47,6 @@ export default {
     streak: { type: Number, default: 0 },
     bestStreak: { type: Number, default: 0 },
     players: { type: Array, default: () => [] },
-    difficulty: { type: String, default: 'normal' },
   },
   data() {
     return {
@@ -65,9 +61,6 @@ export default {
     carouselMove() {
       const fx = SPECIAL_FX[this.carouselFighter.id];
       return fx ? fx.move : '';
-    },
-    difficultyLabel() {
-      return this.difficulty.toUpperCase();
     },
   },
   mounted() {

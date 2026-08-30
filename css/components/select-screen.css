@@ -197,6 +197,9 @@
   color: var(--panel-text);
   background-color: var(--panel-bg);
 }
+.screen-select .nes-container.is-dark > .title.arcade-title {
+  color: var(--warning);
+}
 .screen-select .nes-container > p {
   color: var(--panel-text);
 }

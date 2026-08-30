@@ -7,7 +7,7 @@ export default {
   template: `
     <div class="screen-select fade-in">
       <div class="nes-container is-dark with-title is-centered">
-        <p class="title">Choose Fighter</p>
+        <p class="title" :class="{ 'arcade-title': isArcade }">{{ isArcade ? 'ARCADE MODE — Pick Your Fighter' : 'Choose Fighter' }}</p>
 
         <div class="select-layout">
           <div class="character-grid" @mouseleave="$emit('reset-focus')">
@@ -59,8 +59,11 @@ export default {
           <button type="button" class="nes-btn" @mousedown.prevent @click="$emit('random-pick')">
             <span style="font-size: 14px">?</span> Random <span class="key-hint">[SPACE]</span>
           </button>
-          <button type="button" class="nes-btn rounds-toggle" @mousedown.prevent @click="$emit('cycle-rounds')">
+          <button v-if="!isArcade" type="button" class="nes-btn rounds-toggle" @mousedown.prevent @click="$emit('cycle-rounds')">
             Rounds: {{ rounds }} <span class="key-hint">[R]</span>
+          </button>
+          <button type="button" class="nes-btn" @mousedown.prevent @click="$emit('cycle-difficulty')">
+            {{ difficultyLabel }} <span class="key-hint">[D]</span>
           </button>
           <button class="nes-btn" @click="$emit('back')">Back <span class="key-hint">[ESC]</span></button>
           <button class="nes-btn is-success" :class="{ 'is-disabled': !tempSelection }" :disabled="!tempSelection" @click="$emit('confirm')">
@@ -77,10 +80,15 @@ export default {
     fighterStats: { type: Object, default: () => ({}) },
     confirmId: { type: Number, default: null },
     rounds: { type: Number, default: 1 },
+    difficulty: { type: String, default: 'normal' },
+    isArcade: { type: Boolean, default: false },
   },
   computed: {
     detailFighter() {
       return this.tempSelection || this.players[this.focusedIndex] || null;
+    },
+    difficultyLabel() {
+      return this.difficulty.toUpperCase();
     },
   },
   methods: {
