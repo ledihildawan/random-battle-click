@@ -4,7 +4,7 @@ export default {
   name: 'logs-terminal',
   template: `
     <div class="logs-terminal" role="log" aria-live="polite">
-      <p v-for="(log, index) in logs" :key="index" :class="log.severity">
+      <p v-for="log in logs" :key="log.id" :class="log.severity">
         <span v-if="log.icon" class="log-line-icon"><pixel-icon :name="log.icon" :size="10"></pixel-icon></span>{{ log.severity === 'log-round' ? log.text : '> ' + log.text }}
       </p>
       <p v-if="logs.length === 0" class="log-empty">No activity yet.</p>

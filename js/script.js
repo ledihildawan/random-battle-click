@@ -535,7 +535,7 @@ const app = new Vue({
     },
 
     createLog(entry) {
-      this.logs.push({ text: entry.text, severity: entry.severity, icon: entry.icon });
+      this.logs.push({ id: Date.now() + Math.random(), text: entry.text, severity: entry.severity, icon: entry.icon });
       if (this.logs.length > 60) this.logs.splice(0, this.logs.length - 60);
     },
 

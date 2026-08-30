@@ -1,5 +1,6 @@
 // Sound Engine — procedural chiptune (Web Audio API, zero audio assets)
 const STORAGE_KEY = 'rbc-muted';
+const MASTER_GAIN = 0.22;
 
 const readMutedPreference = () => {
   try {
@@ -27,7 +28,7 @@ const createSoundEngine = () => {
       if (!AC) return false;
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.22;
+      master.gain.value = MASTER_GAIN;
       master.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') {
