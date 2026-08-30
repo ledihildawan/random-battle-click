@@ -107,6 +107,10 @@ export default {
       default: () => ({ damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 }),
     },
     medkitsUsed: { type: Number, default: 0 },
+    arcadeMode: { type: Boolean, default: false },
+    arcadeCleared: { type: Boolean, default: false },
+    arcadeStage: { type: Number, default: 0 },
+    arcadeTotal: { type: Number, default: 5 },
     wins: { type: Number, default: 0 },
     losses: { type: Number, default: 0 },
     index: { type: Number, default: 0 },
@@ -186,11 +190,13 @@ export default {
         weather: 'fog',
       };
     },
-    // Rematch is only offered when the matchup was worth fighting: never after being swept
+    // Rematch is only offered when the matchup was worth fighting: never after being swept, and never in arcade (one run only)
     rematchAvailable() {
+      if (this.arcadeMode) return false;
       return !this.roundScore || !this.roundScore.startsWith('0-');
     },
     menuTitle() {
+      if (this.arcadeMode) return this.arcadeCleared ? 'Champion!' : 'Try again?';
       return this.rematchAvailable ? 'Run it back?' : 'New fighter time?';
     },
     accuracy() {
@@ -205,6 +211,10 @@ export default {
       return 'Tip: Build combo x3+ for bonus damage, or Defend when the CPU meter is full.';
     },
     subtitle() {
+      if (this.arcadeMode) {
+        if (this.arcadeCleared) return 'ARCADE CLEAR — you conquered all challengers!';
+        return `ARCADE OVER — reached stage ${this.arcadeStage}/${this.arcadeTotal}`;
+      }
       if (this.victory) {
         if (this.roundScore.endsWith('-0')) return `PERFECT — ${this.opponent} didn't take a single round`;
         return `${this.opponent} never stood a chance`;

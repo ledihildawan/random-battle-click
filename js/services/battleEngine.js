@@ -71,11 +71,13 @@ function checkWinner(app) {
         severity: 'log-victory',
         icon: 'trophy',
       });
-      if (app.arcade && app.arcade.active) {
+      if (app.arcade && app.arcade.active && app.arcade.stage + 1 < app.arcade.totalStages) {
+        // Arcade mid-ladder: skip the winner screen entirely — advance straight to the next fight
         app.arcade.hpCarry = app.health.player1;
-        if (typeof app.advanceArcadeStage === 'function') {
-          setTimeout(() => app.advanceArcadeStage(), 2500);
-        }
+        app.arcadeStageClear = true;
+        app.status.play = false;
+        app.turnInProgress = true;
+        return true;
       }
       gameOver(app);
       return true;
