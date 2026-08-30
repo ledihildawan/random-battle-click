@@ -111,6 +111,8 @@ const app = new Vue({
       koActive: false,
       koLoser: null,
       roundIntro: false,
+      cheatGlitch: false,
+      selectConfirm: null,
       globalShake: false,
       loadingProgress: 0,
       isDialogOpen: false,
