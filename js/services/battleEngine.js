@@ -11,7 +11,7 @@ import deepFreeze from '../utils/deepFreeze.js';
 export const BALANCE = deepFreeze({
   lifesteal: 0.25,
   attack: { min: 6, max: 10, critChance: 0.15, critMult: 2, missChance: 0.07 },
-  special: { min: 12, max: 20, missChance: 0.25, meterMax: 100, meterGainHit: 30, meterGainTaken: 20, meterGainWhiff: 10 },
+  special: { min: 12, max: 20, missChance: 0.25, meterMax: 100, meterGainHit: 30, meterGainWhiff: 10 },
   heal: { min: 12, max: 20, charges: 3, failChances: [0.05, 0.15, 0.3] },
   defend: { reduction: 0.5, meterGain: 25 },
 });
@@ -203,9 +203,8 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
     UIEffects.spawnFloatingText(app, { target: side, text: `+${lifesteal}`, type: 'heal' });
   }
 
-  // Super meter: attacker charges by landing, defender by enduring
+  // Super meter: only your own actions charge it (landing hits, whiffing, defending)
   gainMeter(app, { side, amount: BALANCE.special.meterGainHit });
-  gainMeter(app, { side: defender, amount: BALANCE.special.meterGainTaken });
 
   UIEffects.triggerVisualEffect(defender);
   UIEffects.triggerAttackLunge(side);
