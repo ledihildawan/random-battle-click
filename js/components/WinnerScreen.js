@@ -35,6 +35,17 @@ export default {
         <p v-if="roundScore" class="winner-rounds">ROUNDS {{ roundScore }}</p>
         <p v-if="surrendered" class="winner-tag" :class="'winner-tag--' + surrenderStory.key">{{ surrenderStory.label }}</p>
         <p class="winner-sub">{{ subtitle }}</p>
+        <div v-if="summary.damageDealt > 0" class="battle-summary">
+          <div class="summary-row">
+            <span class="summary-item"><span class="summary-label">DMG</span> <span class="summary-value">{{ summary.damageDealt }}</span></span>
+            <span class="summary-item"><span class="summary-label">PEAK</span> <span class="summary-value">{{ summary.biggestHit }}</span></span>
+            <span class="summary-item"><span class="summary-label">ACC</span> <span class="summary-value">{{ accuracy }}%</span></span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-item"><span class="summary-label">TOOK</span> <span class="summary-value">{{ summary.damageTaken }}</span></span>
+            <span class="summary-item"><span class="summary-label">MED</span> <span class="summary-value">{{ summary.medkitsUsed }}/3</span></span>
+          </div>
+        </div>
         <div class="winner-menu-wrap">
           <p class="winner-menu-title">{{ menuTitle }}</p>
           <div class="winner-menu" :class="{ 'two-items': !rematchAvailable }">
@@ -90,6 +101,10 @@ export default {
     maxCombo: { type: Number, default: 0 },
     streak: { type: Number, default: 0 },
     roundScore: { type: String, default: '' },
+    summary: {
+      type: Object,
+      default: () => ({ damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0, medkitsUsed: 0 }),
+    },
     wins: { type: Number, default: 0 },
     losses: { type: Number, default: 0 },
     index: { type: Number, default: 0 },
@@ -175,6 +190,10 @@ export default {
     },
     menuTitle() {
       return this.rematchAvailable ? 'Run it back?' : 'New fighter time?';
+    },
+    accuracy() {
+      if (!this.summary.hitsAttempted) return 0;
+      return Math.round((this.summary.hitsLanded / this.summary.hitsAttempted) * 100);
     },
     subtitle() {
       if (this.victory) {

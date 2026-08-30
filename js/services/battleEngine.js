@@ -196,6 +196,15 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
   if (isGod(app, defender)) finalDmg = Math.floor(finalDmg / 2);
   app.health[defender] = Math.max(0, app.health[defender] - finalDmg);
 
+  // Battle summary tracking
+  if (isPlayer(side)) {
+    app.battleSummary.damageDealt += finalDmg;
+    app.battleSummary.biggestHit = Math.max(app.battleSummary.biggestHit, finalDmg);
+    app.battleSummary.hitsLanded += 1;
+  } else {
+    app.battleSummary.damageTaken += finalDmg;
+  }
+
   // Lifesteal: landing a hit drains 25% of the damage dealt (both sides, no overheal)
   const lifesteal = Math.round(finalDmg * BALANCE.lifesteal);
   if (lifesteal > 0 && app.health[side] < 100) {
@@ -264,6 +273,9 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
 
 function resolveAction(app, { side, action }) {
   const enemyName = app.selectedPlayer.player2.name;
+  if (isPlayer(side) && (action === 'attack' || action === 'special')) {
+    app.battleSummary.hitsAttempted += 1;
+  }
 
   if (action === 'heal') {
     // Healing sacrifices combo momentum
@@ -498,6 +510,7 @@ function startNewBattle(app, rematch = false) {
   app.currentRound = 1;
   app.roundIntro = false;
   app._nextInitiative = null;
+  app.battleSummary = { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 };
   app.logs = [];
   app.activeFx = { player1: [], player2: [] };
   UIEffects.clearWeather();

@@ -21,6 +21,22 @@
 .player-card.active-turn {
   border: 4px solid var(--warning);
   transform: translateY(-4px);
+  box-shadow: 0 4px 0 var(--shadow), 0 0 12px rgba(247, 213, 29, 0.3);
+}
+.player-card.active-turn::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--warning);
+  animation: turn-dot 0.8s steps(1) infinite;
+}
+@keyframes turn-dot {
+  50% {
+    opacity: 0;
+  }
 }
 
 /* Super meter under the HP bar */

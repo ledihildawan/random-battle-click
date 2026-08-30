@@ -1,5 +1,11 @@
 /* Component: SelectScreen */
+.select-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
 .character-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
@@ -62,16 +68,6 @@
   display: block;
   margin-bottom: 5px;
 }
-.select-actions {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.select-actions .nes-btn {
-  margin: 0;
-}
 .char-name {
   font-size: 8px;
   margin: 0;
@@ -86,7 +82,6 @@
   margin: 4px 0 0;
   color: var(--danger);
 }
-
 .char-card.is-confirmed {
   animation: confirm-punch 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
@@ -103,6 +98,100 @@
   }
 }
 
+/* Fighter detail panel */
+.fighter-detail {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-12);
+  border: 3px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.detail-avatar {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  border: 4px solid var(--panel-text);
+  background: var(--panel-bg);
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.detail-name {
+  margin: 0;
+  font-size: 9px;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.detail-signature {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid var(--warning);
+  background: rgba(247, 213, 29, 0.08);
+  width: 100%;
+}
+.detail-signature-label {
+  font-size: 6px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.detail-signature-move {
+  font-size: 8px;
+  color: var(--warning);
+  letter-spacing: 1px;
+}
+.detail-lore {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.6;
+  color: var(--muted-high);
+  font-style: italic;
+}
+.detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: center;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 2px solid var(--border);
+}
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.detail-stat-label {
+  font-size: 6px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.detail-stat-value {
+  font-size: 9px;
+  color: var(--accent);
+}
+
+.select-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.select-actions .nes-btn {
+  margin: 0;
+}
+
 /* screen-select overrides (specificity out-weighs nes.css .nes-container.is-dark > .title) */
 .screen-select .nes-container.is-dark > .title {
   color: var(--panel-text);
@@ -113,4 +202,18 @@
 }
 .screen-select {
   padding-top: 20px;
+}
+
+@media (max-width: 800px) {
+  .select-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+  .fighter-detail {
+    width: 100%;
+    max-width: 320px;
+  }
+  .character-grid {
+    width: 100%;
+  }
 }

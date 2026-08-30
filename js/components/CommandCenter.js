@@ -1,5 +1,4 @@
 /** CommandCenter — presentation component (Imperative Shell, Vue 2 object syntax). */
-
 import { BALANCE } from '../services/battleEngine.js';
 
 export default {
@@ -7,19 +6,19 @@ export default {
   template: `
     <div class="actions">
       <div class="combat-buttons">
-        <button type="button" class="nes-btn is-error actions__btn" :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 0 }" :disabled="turnInProgress" @mousedown.prevent @click="$emit('attack-normal')" @mouseover="$emit('hover-index', 0)">
+        <button type="button" class="nes-btn is-error actions__btn" :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 0 }" :disabled="turnInProgress" @mousedown.prevent @click="$emit('attack-normal')" @mouseover="$emit('hover-index', 0)" :title="tooltip.attack">
           <div><pixel-icon name="sword" :size="12"></pixel-icon> Attack <span class="key-hint">[Z]</span></div>
           <div class="btn-subtext">Low risk</div>
         </button>
-        <button type="button" class="nes-btn is-warning actions__btn" :class="{ 'is-disabled': turnInProgress || !specialReady, 'focused': battleMenuIndex === 1 }" :disabled="turnInProgress || !specialReady" @mousedown.prevent @click="$emit('attack-special')" @mouseover="$emit('hover-index', 1)">
+        <button type="button" class="nes-btn is-warning actions__btn" :class="{ 'is-disabled': turnInProgress || !specialReady, 'focused': battleMenuIndex === 1 }" :disabled="turnInProgress || !specialReady" @mousedown.prevent @click="$emit('attack-special')" @mouseover="$emit('hover-index', 1)" :title="tooltip.special">
           <div><pixel-icon name="sparkles" :size="12"></pixel-icon> Special <span class="key-hint">[X]</span></div>
           <div class="btn-subtext">{{ specialSubtext }}</div>
         </button>
-        <button type="button" class="nes-btn is-success actions__btn" :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress, 'focused': battleMenuIndex === 2 }" :disabled="(health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress" @mousedown.prevent @click="$emit('heal')" @mouseover="$emit('hover-index', 2)">
+        <button type="button" class="nes-btn is-success actions__btn" :class="{ 'is-disabled': (health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress, 'focused': battleMenuIndex === 2 }" :disabled="(health.player1 >= 100) || tracker.playerHeal >= limit.heal || turnInProgress" @mousedown.prevent @click="$emit('heal')" @mouseover="$emit('hover-index', 2)" :title="tooltip.heal">
           <div><pixel-icon name="heart" :size="12"></pixel-icon> Heal <span class="key-hint">[C]</span></div>
           <div class="btn-subtext">{{ limit.heal - tracker.playerHeal }}/{{ limit.heal }} · {{ healRisk }}% fail</div>
         </button>
-        <button type="button" class="nes-btn actions__btn" :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 3 }" :disabled="turnInProgress" @mousedown.prevent @click="$emit('defend')" @mouseover="$emit('hover-index', 3)">
+        <button type="button" class="nes-btn actions__btn" :class="{ 'is-disabled': turnInProgress, 'focused': battleMenuIndex === 3 }" :disabled="turnInProgress" @mousedown.prevent @click="$emit('defend')" @mouseover="$emit('hover-index', 3)" :title="tooltip.defend">
           <div><pixel-icon name="shield" :size="12"></pixel-icon> Defend <span class="key-hint">[V]</span></div>
           <div class="btn-subtext">Brace -50%</div>
         </button>
@@ -48,5 +47,14 @@ export default {
       const used = Math.min(this.tracker.playerHeal, BALANCE.heal.failChances.length - 1);
       return Math.round(BALANCE.heal.failChances[used] * 100);
     },
+    tooltip() {
+      return {
+        attack: `${BALANCE.attack.min}-${BALANCE.attack.max} dmg · ${Math.round(BALANCE.attack.critChance * 100)}% crit ×2 · ${Math.round(BALANCE.attack.missChance * 100)}% miss · +${BALANCE.special.meterGainHit} meter`,
+        special: `${BALANCE.special.min}-${BALANCE.special.max} dmg · ${Math.round(BALANCE.special.missChance * 100)}% miss · needs ${BALANCE.special.meterMax} meter`,
+        heal: `${BALANCE.heal.min}-${BALANCE.heal.max} HP · ${this.healRisk}% fail risk · ${this.limit.heal - this.tracker.playerHeal} left`,
+        defend: `-${Math.round(BALANCE.defend.reduction * 100)}% next hit · +${BALANCE.defend.meterGain} meter`,
+      };
+    },
   },
 };
+

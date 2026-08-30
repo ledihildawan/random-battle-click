@@ -70,16 +70,16 @@ const app = new Vue({
   data() {
     return {
       players: [
-        { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg', isChampion: false },
-        { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg', isChampion: false },
-        { id: 3, name: 'Phoenix Walker', avatar: 'player-3.jpg', isChampion: false },
-        { id: 4, name: 'Judy Sewell', avatar: 'player-4.jpg', isChampion: false },
-        { id: 5, name: 'Victor Hansen', avatar: 'player-5.jpg', isChampion: false },
-        { id: 6, name: 'Alisa Hester', avatar: 'player-6.jpg', isChampion: false },
-        { id: 7, name: 'Kelis Ford', avatar: 'player-7.jpg', isChampion: false },
-        { id: 8, name: 'Rene Wells', avatar: 'player-8.jpg', isChampion: false },
-        { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg', isChampion: false },
-        { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg', isChampion: false },
+        { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg', isChampion: false, lore: 'A retired duelist who never stopped practicing.' },
+        { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg', isChampion: false, lore: 'A prospector who fights with the weight of his fortune.' },
+        { id: 3, name: 'Phoenix Walker', avatar: 'player-3.jpg', isChampion: false, lore: 'Rises from every defeat hotter than before.' },
+        { id: 4, name: 'Judy Sewell', avatar: 'player-4.jpg', isChampion: false, lore: 'Loves hard, fights harder.' },
+        { id: 5, name: 'Victor Hansen', avatar: 'player-5.jpg', isChampion: false, lore: 'Delivers judgment with a million volts.' },
+        { id: 6, name: 'Alisa Hester', avatar: 'player-6.jpg', isChampion: false, lore: 'Cultivates toxins that bloom in silence.' },
+        { id: 7, name: 'Kelis Ford', avatar: 'player-7.jpg', isChampion: false, lore: 'Moves faster than the wind can follow.' },
+        { id: 8, name: 'Rene Wells', avatar: 'player-8.jpg', isChampion: false, lore: 'Wishes upon stars, then knocks them down.' },
+        { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg', isChampion: false, lore: 'Cold precision sharpened to a razor\u2019s patience.' },
+        { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg', isChampion: false, lore: 'Every step leaves a crater.' },
       ],
       selectedPlayer: { player1: {}, player2: {} },
       health: { player1: 100, player2: 100 },
@@ -136,6 +136,7 @@ const app = new Vue({
       roundCount: 0,
       stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0 },
       battleMaxCombo: 0,
+      battleSummary: { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 },
       roundsPerMatch: 1,
       roundWins: { player1: 0, player2: 0 },
       currentRound: 1,
@@ -249,6 +250,12 @@ const app = new Vue({
       Sound.play('tick');
       this.saveStats();
     },
+    pickRandomFighter() {
+      const pool = this.players.filter((p) => !p.isSecret);
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      Sound.play('select');
+      this.clickSelectPlayer(pick, this.players.indexOf(pick));
+    },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -277,6 +284,7 @@ const app = new Vue({
         if (e.key === 'ArrowDown') this.moveGridFocus(0, 1);
         if (e.key === 'ArrowUp') this.moveGridFocus(0, -1);
         if (key === 'r') this.cycleRounds();
+        if (e.key === ' ') this.pickRandomFighter();
         if (e.key === 'Enter') this.confirmSelection();
         if (e.key === 'Escape') this.backToTitle();
         return;

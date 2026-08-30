@@ -43,6 +43,7 @@
           :losses="stats.win.player2"
           :streak="stats.streak"
           :best-streak="stats.bestStreak"
+          :players="players"
           @start="goToSelectScreen"
         ></title-screen>
 
@@ -55,6 +56,7 @@
           :confirm-id="selectConfirm"
           :rounds="roundsPerMatch"
           @cycle-rounds="cycleRounds"
+          @random-pick="pickRandomFighter"
           @select="clickSelectPlayer"
           @hover-index="focusedCharIndex = $event"
           @reset-focus="resetCharFocus"
@@ -168,6 +170,7 @@
             :max-combo="battleMaxCombo"
             :streak="stats.streak"
             :round-score="roundsPerMatch > 1 ? roundWins.player1 + '-' + roundWins.player2 : ''"
+            :summary="battleSummary"
             :wins="stats.win.player1"
             :losses="stats.win.player2"
             :index="battleMenuIndex"
