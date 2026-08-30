@@ -41,12 +41,6 @@
   --overlay-weak: rgba(0, 0, 0, 0.25);
   --terminal-green: #33ff00;
   --warning-bg: rgba(247, 213, 29, 0.12);
-  --muted-high: rgba(255, 255, 255, 0.9);
+   --muted-high: rgba(255, 255, 255, 0.9);
 }
 
-/* Handy aliases for light/dark themes (can be toggled later) */
-.theme-dark {
-  --bg-color: #0b0b0f;
-  --panel-bg: #121217;
-  --panel-text: #e6eef8;
-}
