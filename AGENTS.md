@@ -8,7 +8,7 @@ The mapping is explicit:
 
 | Blueprint axiom | Status in this repo | Rationale |
 |---|---|---|
-| TypeScript `strict: true`, Zod boundary parsing | **Structurally unavailable** | Zero-bundler, zero-npm, vanilla ESM served statically. Boundary validation is done via defensive shape checks at the persistence edge (`loadStats` in `js/script.js`). |
+| TypeScript `strict: true`, Zod boundary parsing | **Structurally unavailable** | Zero-bundler, zero-npm, vanilla ESM served statically. Boundary validation is done via Result-pattern reads (`readPersistedStats`/`writePersistedStats`) plus shape sanitization (`sanitizeFighterStats`) at the persistence edge (`js/script.js`). |
 | Workspace aliases, `shared/` packages, monorepo flow | **Forbidden (single package)** | `shared/` in a single-package app is premature abstraction per the Blueprint itself. |
 | `Map`/`Set` over `Object` for collections | **Exempted where reactivity requires** | Vue 2 reactivity does not track `Map`/`Set`. Reactive collections must remain plain objects (e.g. `fighterStats`). Non-reactive internal lookups may use them. |
 | No `this`-mutation / class hierarchies | **Enforced** except host framework | Vue 2 components use object syntax (no classes). `soundEngine` is a closure-based FP factory. Shared mutable `app` state is a Vue reactivity mandate. |

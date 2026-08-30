@@ -1,4 +1,4 @@
-/** GiveUpDialog — presentation component (Imperative Shell, Vue 2 object syntax). */
+/** GiveUpDialog â€” presentation component (Imperative Shell, Vue 2 object syntax). */
 
 export default {
   name: 'give-up-dialog',

@@ -32,8 +32,8 @@ function makeParticle(container, opts) {
   const size = opts.size || 8;
   p.style.left = opts.x + 'px';
   p.style.top = opts.y + 'px';
-  p.style.width = (opts.w || size) + 'px';
-  p.style.height = (opts.h || size) + 'px';
+  p.style.width = (opts.vw || size) + 'px';
+  p.style.height = (opts.vh || size) + 'px';
   if (opts.shape === 'ring') p.style.borderColor = opts.color;
   else p.style.backgroundColor = opts.color;
   p.style.setProperty('--dx', (opts.dx || 0) + 'px');
@@ -57,13 +57,13 @@ export default {
     if (amped) flash.style.opacity = '0.45';
     container.appendChild(flash);
 
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
     const gen = this._sfx[def.type];
     if (gen) {
-      gen(container, def.color, W, H);
+      gen({ container, color: def.color, vw, vh });
       // Amper special (combo x3+): double particles for an overwhelming burst
-      if (amped) gen(container, def.color, W, H);
+      if (amped) gen({ container, color: def.color, vw, vh });
     }
 
     clearTimeout(this._sfxTimer);
@@ -73,16 +73,16 @@ export default {
   },
 
   _sfx: {
-    slash(container, color, W, H) {
+    slash({ container, color, vw, vh }) {
       for (let i = 0; i < 3; i++) {
         makeParticle(container, {
           shape: 'bar',
           color,
           x: -160,
-          y: randRange(H * 0.2, H * 0.7),
-          w: 160,
-          h: 8,
-          dx: W + 340,
+          y: randRange(vh * 0.2, vh * 0.7),
+          vw: 160,
+          vh: 8,
+          dx: vw + 340,
           dy: randRange(-40, 40),
           rot: randRange(-10, 10),
           dur: 0.5,
@@ -92,8 +92,8 @@ export default {
       for (let i = 0; i < 10; i++) {
         makeParticle(container, {
           color,
-          x: randRange(0, W),
-          y: randRange(H * 0.2, H * 0.8),
+          x: randRange(0, vw),
+          y: randRange(vh * 0.2, vh * 0.8),
           size: randRange(4, 8),
           dx: randRange(60, 160),
           dy: randRange(-20, 20),
@@ -103,40 +103,40 @@ export default {
         });
       }
     },
-    coins(container, color, W, H) {
+    coins({ container, color, vw, vh }) {
       for (let i = 0; i < 18; i++) {
         makeParticle(container, {
           color,
-          x: randRange(W * 0.3, W * 0.7),
+          x: randRange(vw * 0.3, vw * 0.7),
           y: randRange(-40, -10),
           dx: randRange(-160, 160),
-          dy: randRange(H * 0.4, H * 0.8),
+          dy: randRange(vh * 0.4, vh * 0.8),
           rot: randRange(180, 540),
           size: randRange(6, 10),
           dur: randRange(0.6, 1),
         });
       }
     },
-    flame(container, color, W, H) {
+    flame({ container, color, vw, vh }) {
       for (let i = 0; i < 16; i++) {
         makeParticle(container, {
           color: i % 2 ? '#f7d51d' : color,
-          x: randRange(0, W),
-          y: H * 0.95,
+          x: randRange(0, vw),
+          y: vh * 0.95,
           dx: randRange(-30, 30),
-          dy: -randRange(H * 0.3, H * 0.6),
+          dy: -randRange(vh * 0.3, vh * 0.6),
           size: randRange(6, 14),
           dur: randRange(0.6, 1.1),
         });
       }
     },
-    hearts(container, color, W, H) {
+    hearts({ container, color, vw, vh }) {
       for (let i = 0; i < 10; i++) {
         makeParticle(container, {
           shape: i % 2 ? 'ring' : 'dot',
           color,
-          x: randRange(0, W),
-          y: randRange(H * 0.4, H * 0.95),
+          x: randRange(0, vw),
+          y: randRange(vh * 0.4, vh * 0.95),
           dx: randRange(-60, 60),
           dy: -randRange(120, 260),
           size: randRange(8, 14),
@@ -144,28 +144,28 @@ export default {
         });
       }
     },
-    bolt(container, color, W, H) {
+    bolt({ container, color, vw, vh }) {
       for (let i = 0; i < 5; i++) {
         makeParticle(container, {
           shape: 'bar',
           color,
-          x: randRange(0, W),
-          y: randRange(0, H * 0.4),
-          w: 6,
-          h: randRange(120, 220),
+          x: randRange(0, vw),
+          y: randRange(0, vh * 0.4),
+          vw: 6,
+          vh: randRange(120, 220),
           anim: 'sfx-flicker',
           dur: 0.5,
           delay: i * 0.08,
         });
       }
     },
-    poison(container, color, W, H) {
+    poison({ container, color, vw, vh }) {
       for (let i = 0; i < 12; i++) {
         makeParticle(container, {
           shape: 'ring',
           color,
-          x: randRange(0, W),
-          y: randRange(H * 0.3, H),
+          x: randRange(0, vw),
+          y: randRange(vh * 0.3, vh),
           dx: randRange(-40, 40),
           dy: -randRange(100, 220),
           size: randRange(8, 16),
@@ -173,71 +173,71 @@ export default {
         });
       }
     },
-    wind(container, color, W, H) {
+    wind({ container, color, vw, vh }) {
       for (let i = 0; i < 8; i++) {
         const dir = i % 2 ? 1 : -1;
         makeParticle(container, {
           shape: 'bar',
           color,
-          x: dir > 0 ? -160 : W + 20,
-          y: randRange(0, H),
-          w: randRange(80, 140),
-          h: 4,
-          dx: dir * (W + 340),
+          x: dir > 0 ? -160 : vw + 20,
+          y: randRange(0, vh),
+          vw: randRange(80, 140),
+          vh: 4,
+          dx: dir * (vw + 340),
           dy: randRange(-15, 15),
           dur: 0.45,
           delay: i * 0.06,
         });
       }
     },
-    stars(container, color, W, H) {
+    stars({ container, color, vw, vh }) {
       for (let i = 0; i < 12; i++) {
         makeParticle(container, {
           color,
-          x: randRange(0, W),
+          x: randRange(0, vw),
           y: -20,
           dx: randRange(-60, 60),
-          dy: randRange(H * 0.4, H * 0.7),
+          dy: randRange(vh * 0.4, vh * 0.7),
           rot: randRange(90, 450),
           size: randRange(8, 12),
           dur: randRange(0.5, 0.9),
         });
       }
     },
-    ice(container, color, W, H) {
+    ice({ container, color, vw, vh }) {
       for (let i = 0; i < 14; i++) {
         makeParticle(container, {
           color,
-          x: randRange(0, W),
+          x: randRange(0, vw),
           y: -20,
           dx: randRange(-30, 30),
-          dy: randRange(H * 0.5, H * 0.8),
+          dy: randRange(vh * 0.5, vh * 0.8),
           rot: randRange(-120, 120),
           size: randRange(6, 10),
           dur: randRange(0.4, 0.7),
         });
       }
     },
-    quake(container, color, W, H) {
+    quake({ container, color, vw, vh }) {
       for (let i = 0; i < 16; i++) {
         makeParticle(container, {
           color: i % 3 ? color : '#7a7a85',
-          x: randRange(0, W),
+          x: randRange(0, vw),
           y: -30,
           dx: randRange(-40, 40),
-          dy: randRange(H * 0.4, H * 0.7),
+          dy: randRange(vh * 0.4, vh * 0.7),
           rot: randRange(-30, 30),
           size: randRange(10, 18),
           dur: randRange(0.5, 0.8),
         });
       }
     },
-    godrays(container, color, W, H) {
+    godrays({ container, color, vw, vh }) {
       const rays = document.createElement('div');
       rays.className = 'sfx-rays';
       container.appendChild(rays);
-      const cx = W / 2;
-      const cy = H / 2;
+      const cx = vw / 2;
+      const cy = vh / 2;
       for (let i = 0; i < 20; i++) {
         const angle = Math.random() * Math.PI * 2;
         const dist = randRange(160, 480);

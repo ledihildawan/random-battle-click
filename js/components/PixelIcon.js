@@ -1,7 +1,8 @@
-/** PixelIcon � presentation component (Imperative Shell, Vue 2 object syntax). */
+﻿/** PixelIcon â€” presentation component (Imperative Shell, Vue 2 object syntax). */
+import deepFreeze from '../utils/deepFreeze.js';
 
-// Pixel icon set from Pixelarticons (https://pixelarticons.com) — MIT license
-const ICONS = {
+// Pixel icon set from Pixelarticons (https://pixelarticons.com) â€” MIT license
+const ICONS = deepFreeze({
   sword: ['M11 2h2v2h-2zM9 4h2v12H9zm4 0h2v12h-2zM7 16h10v2H7zm4 2h2v4h-2z'],
   sparkles: [
     'M11 1h2v4h-2zm0 22h2v-4h-2zM9 5h2v4H9zm0 14h2v-4H9zm4-14h2v4h-2zm0 14h2v-4h-2zM5 9h4v2H5zm14 0h-4v2h4zM1 11h4v2H1zm22 0h-4v2h4zM5 13h4v2H5zm14 0h-4v2h4zm0-12h2v6h-2z',
@@ -49,7 +50,7 @@ const ICONS = {
   'volume-x': [
     'M13 22h-2v-2H9v-2h2V6H9V4h2V2h2v20Zm-4-4H7v-2h2v2Zm-2-8H5v4h2v2H3V8h4v2Zm10.001 5.224h-2v-2H17v-2h-1.999v-2h2v2H19v2h-1.999v2Zm3.999 0h-2v-2h2v2Zm0-4h-2v-2h2v2ZM9 8H7V6h2v2Z',
   ],
-};
+});
 
 export default {
   name: 'pixel-icon',

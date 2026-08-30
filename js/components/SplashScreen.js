@@ -1,4 +1,4 @@
-/** SplashScreen — presentation component (Imperative Shell, Vue 2 object syntax). */
+/** SplashScreen â€” presentation component (Imperative Shell, Vue 2 object syntax). */
 
 import Sound from '../services/soundEngine.js';
 

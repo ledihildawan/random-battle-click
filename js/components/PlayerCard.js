@@ -1,4 +1,4 @@
-/** PlayerCard — presentation component (Imperative Shell, Vue 2 object syntax). */
+/** PlayerCard â€” presentation component (Imperative Shell, Vue 2 object syntax). */
 
 import { onAvatarError } from '../services/avatarFallback.js';
 

@@ -14,6 +14,41 @@ import Sound from './services/soundEngine.js';
 
 const STATS_KEY = 'rbc-stats-v1';
 
+const BATTLE_ACTION_KEYS = Object.freeze({ z: 0, x: 1, c: 2, v: 3 });
+
+/**
+ * Persistence edge (Imperative Shell): localStorage reads/writes return
+ * an explicit Result value instead of throwing; corrupt shapes fall back
+ * to session defaults.
+ */
+const readPersistedStats = () => {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    if (!raw) return { ok: false };
+    return { ok: true, value: JSON.parse(raw) };
+  } catch {
+    return { ok: false };
+  }
+};
+
+const writePersistedStats = (payload) => {
+  try {
+    localStorage.setItem(STATS_KEY, JSON.stringify(payload));
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+};
+
+const sanitizeFighterStats = (raw) => {
+  if (!raw || typeof raw !== 'object') return {};
+  const clean = {};
+  for (const [id, entry] of Object.entries(raw)) {
+    if (entry && typeof entry === 'object') clean[id] = entry;
+  }
+  return clean;
+};
+
 // Register components (using global Vue provided by ./js/vue.js)
 Vue.component('brand-logo', BrandLogo);
 Vue.component('pixel-icon', PixelIcon);
@@ -188,28 +223,21 @@ const app = new Vue({
       this.showSplash = false;
     },
     loadStats() {
-      try {
-        const raw = localStorage.getItem(STATS_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (saved && saved.stats && saved.stats.win) this.stats = { ...this.stats, ...saved.stats };
-        if (saved && saved.fighterStats) this.fighterStats = saved.fighterStats;
-        if (saved && saved.settings && [1, 3, 5].includes(saved.settings.rounds)) {
-          this.roundsPerMatch = saved.settings.rounds;
-        }
-      } catch (e) {
-        // corrupted/unavailable storage: keep session defaults
+      const result = readPersistedStats();
+      if (!result.ok) return;
+      const saved = result.value;
+      if (saved && saved.stats && saved.stats.win) this.stats = { ...this.stats, ...saved.stats };
+      if (saved && saved.fighterStats) this.fighterStats = sanitizeFighterStats(saved.fighterStats);
+      if (saved && saved.settings && [1, 3, 5].includes(saved.settings.rounds)) {
+        this.roundsPerMatch = saved.settings.rounds;
       }
     },
     saveStats() {
-      try {
-        localStorage.setItem(
-          STATS_KEY,
-          JSON.stringify({ stats: this.stats, fighterStats: this.fighterStats, settings: { rounds: this.roundsPerMatch } })
-        );
-      } catch (e) {
-        // storage unavailable: stay session-only
-      }
+      writePersistedStats({
+        stats: this.stats,
+        fighterStats: this.fighterStats,
+        settings: { rounds: this.roundsPerMatch },
+      });
     },
     cycleRounds() {
       const options = [1, 3, 5];
@@ -230,7 +258,7 @@ const app = new Vue({
       if (e.repeat) return;
 
       if (this.isTitleScreen) {
-        this.inputBuffer.push(e.key.toLowerCase());
+        this.inputBuffer.push(key);
         if (this.inputBuffer.length > 20) this.inputBuffer.shift();
         const bufferString = this.inputBuffer.slice(-this.konamiCode.length).join(',');
         const codeString = this.konamiCode.join(',');
@@ -261,7 +289,7 @@ const app = new Vue({
       }
 
       if (this.status.play && !this.status.winner && !this.turnInProgress && !this.battleIntro) {
-        const actionIndex = { z: 0, x: 1, c: 2, v: 3 }[key];
+        const actionIndex = BATTLE_ACTION_KEYS[key];
         if (actionIndex !== undefined) {
           this.battleMenuIndex = actionIndex;
           this.executeBattleAction();
@@ -503,7 +531,7 @@ const app = new Vue({
     },
 
     createLog(entry) {
-      this.logs.push({ text: entry.text, cls: entry.cls, icon: entry.icon });
+      this.logs.push({ text: entry.text, severity: entry.severity, icon: entry.icon });
       if (this.logs.length > 60) this.logs.splice(0, this.logs.length - 60);
     },
 

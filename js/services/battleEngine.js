@@ -19,8 +19,8 @@ const calcDamage = (min, max) => Math.floor(Math.random() * (max - min + 1)) + m
 const other = (side) => (side === 'player1' ? 'player2' : 'player1');
 const isPlayer = (side) => side === 'player1';
 
-function createLog(app, { text, cls = null, icon = null }) {
-  if (typeof app.createLog === 'function') app.createLog({ text, cls, icon });
+function createLog(app, { text, severity = null, icon = null }) {
+  if (typeof app.createLog === 'function') app.createLog({ text, severity, icon });
 }
 
 function clearTurnTimer(app) {
@@ -48,10 +48,10 @@ function gameOver(app) {
 
 function announceMatchPoint(app, needed) {
   if (app.roundWins.player2 === needed - 1) {
-    createLog(app, { text: 'MATCH POINT — CPU! This is your last stand!', cls: 'log-enemy', icon: 'warning-diamond' });
+    createLog(app, { text: 'MATCH POINT — CPU! This is your last stand!', severity: 'log-enemy', icon: 'warning-diamond' });
     Sound.play('matchPoint');
   } else if (app.roundWins.player1 === needed - 1) {
-    createLog(app, { text: 'MATCH POINT — YOU! Finish it!', cls: 'log-special', icon: 'trophy' });
+    createLog(app, { text: 'MATCH POINT — YOU! Finish it!', severity: 'log-special', icon: 'trophy' });
     Sound.play('matchPoint');
   }
 }
@@ -67,7 +67,7 @@ function checkWinner(app) {
       recordResult(app, true);
       createLog(app, {
         text: `VICTORY! You dismantled ${app.selectedPlayer.player2.name}!`,
-        cls: 'log-victory',
+        severity: 'log-victory',
         icon: 'trophy',
       });
       gameOver(app);
@@ -75,7 +75,7 @@ function checkWinner(app) {
     }
     createLog(app, {
       text: `ROUND ${app.currentRound} — YOURS! (${app.roundWins.player1}-${app.roundWins.player2})`,
-      cls: 'log-special',
+      severity: 'log-special',
       icon: 'trophy',
     });
     announceMatchPoint(app, needed);
@@ -93,13 +93,13 @@ function checkWinner(app) {
     if (app.roundWins.player2 >= needed) {
       app.selectedPlayer.player2.isChampion = true;
       recordResult(app, false);
-      createLog(app, { text: 'DEFEAT! Run it back.', cls: 'log-defeat', icon: 'skull' });
+      createLog(app, { text: 'DEFEAT! Run it back.', severity: 'log-defeat', icon: 'skull' });
       gameOver(app);
       return true;
     }
     createLog(app, {
       text: `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} steals it! (${app.roundWins.player1}-${app.roundWins.player2})`,
-      cls: 'log-special',
+      severity: 'log-special',
       icon: 'skull',
     });
     announceMatchPoint(app, needed);
@@ -120,7 +120,7 @@ function beginNextRound(app) {
   app.specialPity = { player1: false, player2: false };
   app.guard = { player1: false, player2: false };
   // Super meter carries across rounds — bank it for the decider
-  createLog(app, { text: `ROUND ${app.currentRound}`, cls: 'log-round' });
+  createLog(app, { text: `ROUND ${app.currentRound}`, severity: 'log-round' });
   if (BALANCE.heal.charges - app.tracker.playerHeal <= 0) {
     createLog(app, { text: 'No medkits left. Bleed for it.', icon: 'warning-diamond' });
   }
@@ -160,10 +160,10 @@ function gainMeter(app, { side, amount }) {
   app.specialMeter[side] = Math.min(M.meterMax, before + amount);
   if (before < M.meterMax && app.specialMeter[side] >= M.meterMax) {
     if (side === 'player1') {
-      createLog(app, { text: 'SPECIAL READY — press X!', cls: 'log-special', icon: 'sparkles' });
+      createLog(app, { text: 'SPECIAL READY — press X!', severity: 'log-special', icon: 'sparkles' });
       Sound.play('turnReady');
     } else {
-      createLog(app, { text: `${app.selectedPlayer.player2.name}'s special is CHARGED!`, cls: 'log-enemy', icon: 'sparkles' });
+      createLog(app, { text: `${app.selectedPlayer.player2.name}'s special is CHARGED!`, severity: 'log-enemy', icon: 'sparkles' });
       Sound.play('matchPoint');
     }
   }
@@ -227,7 +227,7 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
       text: isPlayer(side)
         ? `${label}You blasted ${enemyName} for ${finalDmg} DMG!`
         : `${label}${enemyName} blasted you for ${finalDmg} DMG!`,
-      cls: 'log-special',
+      severity: 'log-special',
       icon: 'sparkles',
     });
   } else if (isCrit) {
@@ -235,7 +235,7 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
       text: isPlayer(side)
         ? `CRITICAL HIT! You smashed ${enemyName} for ${finalDmg} DMG!`
         : `CRITICAL HIT! ${enemyName} smashed you for ${finalDmg} DMG!`,
-      cls: 'log-crit',
+      severity: 'log-crit',
       icon: 'bomb',
     });
     Sound.play('crit');
@@ -243,7 +243,7 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
   } else {
     createLog(app, {
       text: isPlayer(side) ? `You hit ${enemyName} for ${finalDmg} DMG.` : `${enemyName} hit you for ${finalDmg} DMG.`,
-      cls: isPlayer(side) ? null : 'log-enemy',
+      severity: isPlayer(side) ? null : 'log-enemy',
       icon: isPlayer(side) ? 'sword' : 'shield',
     });
     Sound.play('attack');
@@ -252,11 +252,11 @@ function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
   const heatingLine = isPlayer(side) ? `You're heating up!` : `${enemyName} is heating up — stop them!`;
   const berserkLine = isPlayer(side) ? `RUTHLESS!` : `${enemyName} is going berserk!`;
   if (combo === 3) {
-    createLog(app, { text: `COMBO x3! ${heatingLine}`, cls: 'log-special', icon: 'sparkles' });
+    createLog(app, { text: `COMBO x3! ${heatingLine}`, severity: 'log-special', icon: 'sparkles' });
     Sound.play('combo');
   }
   if (combo === 5) {
-    createLog(app, { text: `COMBO x5! ${berserkLine}`, cls: 'log-special', icon: 'sparkles' });
+    createLog(app, { text: `COMBO x5! ${berserkLine}`, severity: 'log-special', icon: 'sparkles' });
     Sound.play('combo');
   }
   if (combo >= 5) UIEffects.triggerGlobalShake(app);
@@ -290,7 +290,7 @@ function resolveAction(app, { side, action }) {
       text: isPlayer(side)
         ? `You used a Medkit (+${healAmount} HP).${leftLabel}`
         : `${enemyName} used a Medkit (+${healAmount} HP).${leftLabel}`,
-      cls: 'log-heal',
+      severity: 'log-heal',
       icon: 'heart',
     });
     return;
@@ -441,7 +441,7 @@ function surrender(app) {
   app.health.player1 = 0;
   app.isSurrender = true;
   recordResult(app, false);
-  createLog(app, { text: 'SIGNAL LOST: You surrendered.', cls: 'log-surrender', icon: 'flag' });
+  createLog(app, { text: 'SIGNAL LOST: You surrendered.', severity: 'log-surrender', icon: 'flag' });
   gameOver(app);
 }
 

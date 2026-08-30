@@ -1,4 +1,4 @@
-/** WinnerScreen — presentation component (Imperative Shell, Vue 2 object syntax). */
+/** WinnerScreen â€” presentation component (Imperative Shell, Vue 2 object syntax). */
 
 import UIEffects from '../services/uiEffects.js';
 import Sound from '../services/soundEngine.js';

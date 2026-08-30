@@ -1,4 +1,4 @@
-/** CommandCenter — presentation component (Imperative Shell, Vue 2 object syntax). */
+/** CommandCenter â€” presentation component (Imperative Shell, Vue 2 object syntax). */
 
 import { BALANCE } from '../services/battleEngine.js';
 
