@@ -72,10 +72,10 @@ function checkWinner(app) {
         icon: 'trophy',
       });
       if (app.arcade && app.arcade.active && app.arcade.stage + 1 < app.arcade.totalStages) {
-        // Arcade mid-ladder: skip the winner screen entirely — advance straight to the next fight
+        // Arcade mid-ladder: skip the winner screen — keep the battle visible under the K.O.
+        // overlay; the root advances straight to the next stage's loading screen
         app.arcade.hpCarry = app.health.player1;
         app.arcadeStageClear = true;
-        app.status.play = false;
         app.turnInProgress = true;
         return true;
       }
