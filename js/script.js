@@ -147,7 +147,6 @@ const app = new Vue({
       difficulty: 'normal',
       arcade: { active: false, stage: 0, totalStages: 5, ladder: [], hpCarry: 100 },
       arcadeStageClear: false,
-      arcadeCleared: false,
       roundWins: { player1: 0, player2: 0 },
       currentRound: 1,
       roundIntro: false,
@@ -176,6 +175,7 @@ const app = new Vue({
       return this.currentRound > 1 ? `ROUND ${this.currentRound}` : 'FIGHT!';
     },
     rematchAvailable() {
+      if (this.arcade.active) return false;
       return this.roundsPerMatch <= 1 || this.roundWins.player1 > 0;
     },
   },
@@ -311,7 +311,8 @@ const app = new Vue({
     startArcadeStage() {
       const opponent = this.arcade.ladder[this.arcade.stage];
       if (!opponent) {
-        this.endArcade(true);
+        this.arcade.active = false;
+        this.status.winner = true;
         return;
       }
       Sound.play('fight');
@@ -322,13 +323,6 @@ const app = new Vue({
       this.arcade.stage += 1;
       this.arcade.hpCarry = Math.min(100, this.arcade.hpCarry + 25);
       this.startArcadeStage();
-    },
-    endArcade(cleared) {
-      const stage = this.arcade.stage + 1;
-      this.arcade.active = false;
-      this.arcadeCleared = cleared;
-      this.status.winner = true;
-      if (cleared) Sound.play('victory');
     },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
@@ -501,7 +495,6 @@ const app = new Vue({
       this.selectConfirm = null;
       this.arcade.active = false;
       this.arcadeStageClear = false;
-      this.arcadeCleared = false;
       this.tempSelection = this.players[0];
       this.focusedCharIndex = 0;
     },
@@ -539,7 +532,6 @@ const app = new Vue({
       this.turnBanner = null;
       this.arcade.active = false;
       this.arcadeStageClear = false;
-      this.arcadeCleared = false;
       clearTimeout(this._introTimer);
       clearTimeout(this._fightSoundTimer);
       clearTimeout(this._koTimer);
