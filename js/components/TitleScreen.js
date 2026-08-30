@@ -22,6 +22,9 @@ export default {
           <button type="button" class="nes-btn is-primary" @click="$emit('view-stats')">
             <pixel-icon name="star" :size="12"></pixel-icon> Stats <span class="key-hint">[S]</span>
           </button>
+          <button type="button" class="nes-btn" :click="$emit('toggle-colorblind')" @click="$emit('toggle-colorblind')">
+            <pixel-icon name="eye" :size="12"></pixel-icon> Colorblind
+          </button>
         </div>
       </div>
 

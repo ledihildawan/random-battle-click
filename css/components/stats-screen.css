@@ -161,6 +161,37 @@
   color: var(--danger);
 }
 
+/* Achievements grid */
+.stats-achievements {
+  padding: 20px;
+}
+.achievement-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 12px;
+}
+.achievement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 200px;
+  flex: 1 1 200px;
+}
+.achievement-item-name {
+  margin: 0;
+  font-size: 8px;
+  color: var(--muted);
+}
+.achievement-item-name.is-unlocked {
+  color: var(--warning);
+}
+.achievement-item-desc {
+  margin: 0;
+  font-size: 7px;
+  color: var(--muted);
+}
+
 /* Actions */
 .stats-actions {
   display: flex;

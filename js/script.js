@@ -23,6 +23,21 @@ const DIFFICULTY_PRESETS = Object.freeze({
   hard: { label: 'HARD', defendMult: 1.3, healMult: 1.2, finisherMult: 1.0, comboRead: true, guardRead: true, bankMeter: true },
 });
 
+const ACHIEVEMENTS = Object.freeze([
+  { id: 'first-blood', name: 'First Blood', desc: 'Win your first battle' },
+  { id: 'getting-good', name: 'Getting Good', desc: 'Win 5 battles' },
+  { id: 'champion', name: 'Champion', desc: 'Win 20 battles' },
+  { id: 'perfect', name: 'Perfect Match', desc: 'Win without losing a round' },
+  { id: 'untouchable', name: 'Untouchable', desc: 'Win with full HP remaining' },
+  { id: 'speedrun', name: 'Speedrun', desc: 'Win in under 5 turns' },
+  { id: 'combo-master', name: 'Combo Master', desc: 'Reach a x5 combo' },
+  { id: 'streak-3', name: 'On Fire', desc: 'Win 3 in a row' },
+  { id: 'streak-5', name: 'Unstoppable', desc: 'Win 5 in a row' },
+  { id: 'arcade-clear', name: 'Arcade Champion', desc: 'Complete arcade mode' },
+  { id: 'arcade-veteran', name: 'Arcade Veteran', desc: 'Reach stage 7 in arcade' },
+  { id: 'nemesis-slayer', name: 'Nemesis Slayer', desc: 'Beat the character that owns you most' },
+]);
+
 /**
  * Persistence edge (Imperative Shell): localStorage reads/writes return
  * an explicit Result value instead of throwing; corrupt shapes fall back
@@ -143,11 +158,13 @@ const app = new Vue({
       surrenderHp: 0,
       surrenderEnemyHp: 0,
       roundCount: 0,
-      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 } },
+      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 }, achievements: [] },
       battleMaxCombo: 0,
       battleSummary: { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 },
       roundsPerMatch: 1,
       difficulty: 'normal',
+      achievementToast: null,
+      colorblind: false,
       arcade: { active: false, stage: 0, totalStages: 5, ladder: [], hpCarry: 100 },
       arcadeStageClear: false,
       arcadeSelecting: false,
@@ -164,6 +181,12 @@ const app = new Vue({
 
   created() {
     this.loadStats();
+    try {
+      this.colorblind = localStorage.getItem('rbc-colorblind') === '1';
+    } catch {
+      this.colorblind = false;
+    }
+    if (this.colorblind) document.documentElement.classList.add('colorblind');
   },
 
   computed: {
@@ -174,6 +197,9 @@ const app = new Vue({
     },
     isVictory() {
       return this.health.player2 <= 0;
+    },
+    achievements() {
+      return ACHIEVEMENTS;
     },
     winsNeeded() {
       return Math.ceil(this.roundsPerMatch / 2);
@@ -203,11 +229,12 @@ const app = new Vue({
       this._koTimer = setTimeout(() => {
         this.koActive = false;
         this.koLoser = null;
-        // Arcade loss: offer continue instead of the winner screen
         if (this.arcade.active && !this.isVictory) {
           this.arcadeContinue = true;
           this.arcadeContinueCount = 9;
           this.startContinueCountdown();
+        } else {
+          this.checkAchievements();
         }
       }, 1400);
     },
@@ -404,6 +431,7 @@ const app = new Vue({
         if (e.key === 'Enter') this.goToSelectScreen();
         if (key === 'a') this.startArcade();
         if (key === 's') this.viewingStats = true;
+        if (key === 'c') this.toggleColorblind();
         return;
       }
 
@@ -537,6 +565,17 @@ const app = new Vue({
       Sound.toggleMute();
     },
 
+    toggleColorblind() {
+      this.colorblind = !this.colorblind;
+      document.documentElement.classList.toggle('colorblind', this.colorblind);
+      try {
+        localStorage.setItem('rbc-colorblind', this.colorblind ? '1' : '0');
+      } catch {
+        // storage unavailable
+      }
+      Sound.play('tick');
+    },
+
     activateCheat() {
       if (this.cheatActivated || this.players.some((p) => p.id === 999)) return;
       this.cheatActivated = true;
@@ -602,10 +641,44 @@ const app = new Vue({
     },
 
     resetAllStats() {
-      this.stats = { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0 };
+      this.stats = { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 }, achievements: [] };
       this.fighterStats = {};
       this.saveStats();
       Sound.play('back');
+    },
+
+    checkAchievements() {
+      if (!this.isVictory) return;
+      const unlocked = new Set(this.stats.achievements || []);
+      const s = this.stats;
+      const bs = this.battleSummary;
+      const newlyUnlocked = [];
+
+      if (s.win.player1 >= 1 && !unlocked.has('first-blood')) newlyUnlocked.push('first-blood');
+      if (s.win.player1 >= 5 && !unlocked.has('getting-good')) newlyUnlocked.push('getting-good');
+      if (s.win.player1 >= 20 && !unlocked.has('champion')) newlyUnlocked.push('champion');
+      if (this.roundWins.player2 === 0 && this.roundsPerMatch > 1 && !unlocked.has('perfect')) newlyUnlocked.push('perfect');
+      if (this.health.player1 >= 100 && !unlocked.has('untouchable')) newlyUnlocked.push('untouchable');
+      if (this.roundCount < 5 && !unlocked.has('speedrun')) newlyUnlocked.push('speedrun');
+      if (this.battleMaxCombo >= 5 && !unlocked.has('combo-master')) newlyUnlocked.push('combo-master');
+      if (s.streak >= 3 && !unlocked.has('streak-3')) newlyUnlocked.push('streak-3');
+      if (s.streak >= 5 && !unlocked.has('streak-5')) newlyUnlocked.push('streak-5');
+      if (s.arcade && s.arcade.clears > 0 && !unlocked.has('arcade-clear')) newlyUnlocked.push('arcade-clear');
+      if (s.arcade && s.arcade.bestStage >= 7 && !unlocked.has('arcade-veteran')) newlyUnlocked.push('arcade-veteran');
+
+      if (newlyUnlocked.length > 0) {
+        this.stats.achievements = [...(this.stats.achievements || []), ...newlyUnlocked];
+        this.saveStats();
+        const first = ACHIEVEMENTS.find((a) => a.id === newlyUnlocked[0]);
+        if (first) {
+          this.achievementToast = first;
+          Sound.play('cheat');
+          clearTimeout(this._achievementTimer);
+          this._achievementTimer = setTimeout(() => {
+            this.achievementToast = null;
+          }, 3000);
+        }
+      }
     },
 
     backToTitle() {

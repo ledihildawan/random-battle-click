@@ -89,6 +89,19 @@ export default {
         </div>
       </div>
 
+      <div v-if="achievements.length" class="nes-container is-dark with-title stats-achievements">
+        <p class="title">Achievements</p>
+        <div class="achievement-grid">
+          <div v-for="ach in achievements" :key="ach.id" class="achievement-item">
+            <pixel-icon :name="ach.unlocked ? 'star' : 'x'" :size="12"></pixel-icon>
+            <div>
+              <p class="achievement-item-name" :class="{ 'is-unlocked': ach.unlocked }">{{ ach.name }}</p>
+              <p class="achievement-item-desc">{{ ach.desc }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="stats-actions">
         <button v-if="!confirmReset" type="button" class="nes-btn is-error" @mousedown.prevent @click="confirmReset = true">
           <pixel-icon name="x" :size="10"></pixel-icon> Reset Record
@@ -106,6 +119,7 @@ export default {
     stats: { type: Object, required: true },
     fighterStats: { type: Object, default: () => ({}) },
     players: { type: Array, required: true },
+    achievementList: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -152,6 +166,10 @@ export default {
       const played = this.sortedRoster.filter((r) => r.wins + r.losses > 0);
       if (!played.length) return null;
       return played[0].id;
+    },
+    achievements() {
+      const unlocked = new Set(this.stats.achievements || []);
+      return this.achievementList.map((a) => ({ ...a, unlocked: unlocked.has(a.id) }));
     },
   },
   methods: {

@@ -15,6 +15,7 @@
     />
 
     <link rel="stylesheet" href="./css/main.css" />
+    <link rel="manifest" href="./manifest.json" />
   </head>
   <body>
     <div id="app" v-cloak>
@@ -48,6 +49,7 @@
           @arcade="startArcade"
           @cycle-difficulty="cycleDifficulty"
           @view-stats="viewingStats = true"
+          @toggle-colorblind="toggleColorblind"
         ></title-screen>
 
         <stats-screen
@@ -55,6 +57,7 @@
           :stats="stats"
           :fighter-stats="fighterStats"
           :players="players"
+          :achievement-list="achievements"
           @reset="resetAllStats"
           @back="viewingStats = false"
         ></stats-screen>
@@ -215,6 +218,16 @@
         </transition>
       </div>
 
+      <transition name="fade">
+        <div v-if="achievementToast" class="achievement-toast">
+          <pixel-icon name="star" :size="14"></pixel-icon>
+          <div>
+            <p class="achievement-name">{{ achievementToast.name }}</p>
+            <p class="achievement-desc">{{ achievementToast.desc }}</p>
+          </div>
+        </div>
+      </transition>
+
       <give-up-dialog :open="isDialogOpen" @cancel="hideDialogGiveUp" @confirm="giveUp"></give-up-dialog>
       <div class="give-up-dialog-backdrop" v-if="isDialogOpen" @click="hideDialogGiveUp"></div>
     </div>
@@ -228,5 +241,8 @@
     <!-- Libraries (services & components are loaded via module) -->
     <script src="./js/vue.js"></script>
     <script type="module" src="./js/script.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function() {});
+    </script>
   </body>
 </html>

@@ -44,3 +44,13 @@
    --muted-high: rgba(255, 255, 255, 0.9);
 }
 
+/* Colorblind-friendly palette: deuteranopia/protanopia safe */
+.colorblind {
+  --accent: #ffffff;
+  --accent-2: #f0f0f0;
+  --danger: #ff8c00;
+  --success: #00ced1;
+  --warning: #ffd700;
+  --terminal-green: #00ffff;
+}
+
