@@ -1,3 +1,5 @@
+/** PixelIcon — presentation component (Imperative Shell, Vue 2 object syntax). */
+
 // Pixel icon set from Pixelarticons (https://pixelarticons.com) â€” MIT license
 const ICONS = {
   sword: ['M11 2h2v2h-2zM9 4h2v12H9zm4 0h2v12h-2zM7 16h10v2H7zm4 2h2v4h-2z'],

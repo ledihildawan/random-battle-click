@@ -15,6 +15,7 @@ The mapping is explicit:
 | Domain Core free of side-effects | **Known deviation, documented** | `battleEngine` currently calls `UIEffects`/`Sound` ports directly. Migration path: engine returns an intent list; the Shell executes it. Do not widen this coupling; prefer intent-style additions. |
 | `for`/`while`/`forEach` bans in Core | **Enforced in `battleEngine` resolution paths** | RNG loops and particle engines (Shell) are exempt as high-throughput imperative code. |
 | `Object.freeze` domain constants | **Enforced** | `BALANCE`, `SPECIAL_FX` are deep-frozen at module load via `js/utils/deepFreeze.js`. |
+| §8 Parameter limits | **Enforced via `(app, payload)` convention** | Functions may take at most 2 positional args: the reactive root (`app`) as receiver plus a single options object (e.g. `applyDamage(app, { side, dmg, type })`). Applies to services and cross-component call surfaces. |
 
 Module taxonomy in this repo:
 

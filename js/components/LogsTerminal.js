@@ -1,3 +1,5 @@
+/** LogsTerminal — presentation component (Imperative Shell, Vue 2 object syntax). */
+
 export default {
   name: 'logs-terminal',
   template: `

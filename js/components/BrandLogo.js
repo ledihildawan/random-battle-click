@@ -1,3 +1,5 @@
+/** BrandLogo — presentation component (Imperative Shell, Vue 2 object syntax). */
+
 export default {
   name: 'brand-logo',
   template: `

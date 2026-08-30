@@ -19,8 +19,8 @@ const calcDamage = (min, max) => Math.floor(Math.random() * (max - min + 1)) + m
 const other = (side) => (side === 'player1' ? 'player2' : 'player1');
 const isPlayer = (side) => side === 'player1';
 
-function createLog(app, text, cls, icon) {
-  if (typeof app.createLog === 'function') app.createLog(text, cls, icon);
+function createLog(app, { text, cls = null, icon = null }) {
+  if (typeof app.createLog === 'function') app.createLog({ text, cls, icon });
 }
 
 function clearTurnTimer(app) {
@@ -48,10 +48,10 @@ function gameOver(app) {
 
 function announceMatchPoint(app, needed) {
   if (app.roundWins.player2 === needed - 1) {
-    createLog(app, `MATCH POINT — CPU! This is your last stand!`, 'log-enemy', 'warning-diamond');
+    createLog(app, { text: 'MATCH POINT — CPU! This is your last stand!', cls: 'log-enemy', icon: 'warning-diamond' });
     Sound.play('matchPoint');
   } else if (app.roundWins.player1 === needed - 1) {
-    createLog(app, `MATCH POINT — YOU! Finish it!`, 'log-special', 'trophy');
+    createLog(app, { text: 'MATCH POINT — YOU! Finish it!', cls: 'log-special', icon: 'trophy' });
     Sound.play('matchPoint');
   }
 }
@@ -65,11 +65,19 @@ function checkWinner(app) {
     if (app.roundWins.player1 >= needed) {
       app.selectedPlayer.player1.isChampion = true;
       recordResult(app, true);
-      createLog(app, `VICTORY! You dismantled ${app.selectedPlayer.player2.name}!`, 'log-victory', 'trophy');
+      createLog(app, {
+        text: `VICTORY! You dismantled ${app.selectedPlayer.player2.name}!`,
+        cls: 'log-victory',
+        icon: 'trophy',
+      });
       gameOver(app);
       return true;
     }
-    createLog(app, `ROUND ${app.currentRound} — YOURS! (${app.roundWins.player1}-${app.roundWins.player2})`, 'log-special', 'trophy');
+    createLog(app, {
+      text: `ROUND ${app.currentRound} — YOURS! (${app.roundWins.player1}-${app.roundWins.player2})`,
+      cls: 'log-special',
+      icon: 'trophy',
+    });
     announceMatchPoint(app, needed);
     clearTurnTimer(app);
     app.turnInProgress = true;
@@ -85,11 +93,15 @@ function checkWinner(app) {
     if (app.roundWins.player2 >= needed) {
       app.selectedPlayer.player2.isChampion = true;
       recordResult(app, false);
-      createLog(app, 'DEFEAT! Run it back.', 'log-defeat', 'skull');
+      createLog(app, { text: 'DEFEAT! Run it back.', cls: 'log-defeat', icon: 'skull' });
       gameOver(app);
       return true;
     }
-    createLog(app, `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} steals it! (${app.roundWins.player1}-${app.roundWins.player2})`, 'log-special', 'skull');
+    createLog(app, {
+      text: `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} steals it! (${app.roundWins.player1}-${app.roundWins.player2})`,
+      cls: 'log-special',
+      icon: 'skull',
+    });
     announceMatchPoint(app, needed);
     clearTurnTimer(app);
     app.turnInProgress = true;
@@ -108,19 +120,22 @@ function beginNextRound(app) {
   app.specialPity = { player1: false, player2: false };
   app.guard = { player1: false, player2: false };
   // Super meter carries across rounds — bank it for the decider
-  createLog(app, `ROUND ${app.currentRound}`, 'log-round');
+  createLog(app, { text: `ROUND ${app.currentRound}`, cls: 'log-round' });
   if (BALANCE.heal.charges - app.tracker.playerHeal <= 0) {
-    createLog(app, `No medkits left. Bleed for it.`, null, 'warning-diamond');
+    createLog(app, { text: 'No medkits left. Bleed for it.', icon: 'warning-diamond' });
   }
   // Initiative: the previous round's loser strikes first (round 1 stays a coin flip)
   const starter = app.nextInitiative || (Math.random() < 0.5 ? 'player1' : 'player2');
   app.nextInitiative = null;
   if (starter === 'player1') {
     app.turnInProgress = false;
-    createLog(app, `ROUND ${app.currentRound} — you strike first! Make it count!`, null, 'arrow-big-up');
+    createLog(app, { text: `ROUND ${app.currentRound} — you strike first! Make it count!`, icon: 'arrow-big-up' });
   } else {
     app.turnInProgress = true;
-    createLog(app, `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} strikes first — brace yourself!`, null, 'warning-diamond');
+    createLog(app, {
+      text: `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} strikes first — brace yourself!`,
+      icon: 'warning-diamond',
+    });
     scheduleEnemyTurn(app, 2400);
   }
 }
@@ -139,16 +154,16 @@ function beginTurn(app, side) {
   app.guard[side] = false;
 }
 
-function gainMeter(app, sideKey, amount) {
+function gainMeter(app, { side, amount }) {
   const M = BALANCE.special;
-  const before = app.specialMeter[sideKey];
-  app.specialMeter[sideKey] = Math.min(M.meterMax, before + amount);
-  if (before < M.meterMax && app.specialMeter[sideKey] >= M.meterMax) {
-    if (sideKey === 'player1') {
-      createLog(app, 'SPECIAL READY — press X!', 'log-special', 'sparkles');
+  const before = app.specialMeter[side];
+  app.specialMeter[side] = Math.min(M.meterMax, before + amount);
+  if (before < M.meterMax && app.specialMeter[side] >= M.meterMax) {
+    if (side === 'player1') {
+      createLog(app, { text: 'SPECIAL READY — press X!', cls: 'log-special', icon: 'sparkles' });
       Sound.play('turnReady');
     } else {
-      createLog(app, `${app.selectedPlayer.player2.name}'s special is CHARGED!`, 'log-enemy', 'sparkles');
+      createLog(app, { text: `${app.selectedPlayer.player2.name}'s special is CHARGED!`, cls: 'log-enemy', icon: 'sparkles' });
       Sound.play('matchPoint');
     }
   }
@@ -158,7 +173,7 @@ function specialReady(app, side) {
   return app.specialMeter[side] >= BALANCE.special.meterMax;
 }
 
-function applyDamage(app, side, dmg, type, isCrit, moveName) {
+function applyDamage(app, { side, dmg, type, isCrit, moveName = null }) {
   const defender = other(side);
   const enemyName = app.selectedPlayer.player2.name;
 
@@ -184,70 +199,70 @@ function applyDamage(app, side, dmg, type, isCrit, moveName) {
   const lifesteal = Math.round(finalDmg * BALANCE.lifesteal);
   if (lifesteal > 0 && app.health[side] < 100) {
     app.health[side] = Math.min(100, app.health[side] + lifesteal);
-    UIEffects.spawnFloatingText(app, side, `+${lifesteal}`, 'heal');
+    UIEffects.spawnFloatingText(app, { target: side, text: `+${lifesteal}`, type: 'heal' });
   }
 
   // Super meter: attacker charges by landing, defender by enduring
-  gainMeter(app, side, BALANCE.special.meterGainHit);
-  gainMeter(app, defender, BALANCE.special.meterGainTaken);
+  gainMeter(app, { side, amount: BALANCE.special.meterGainHit });
+  gainMeter(app, { side: defender, amount: BALANCE.special.meterGainTaken });
 
   UIEffects.triggerVisualEffect(defender);
   UIEffects.triggerAttackLunge(side);
   const dmgLabel = combo >= 3 ? `-${finalDmg} x${combo}` : `-${finalDmg}`;
   const fxType = type === 'special' ? 'special' : isCrit || combo >= 5 ? 'crit' : 'damage';
-  UIEffects.spawnFloatingText(app, defender, dmgLabel, fxType);
+  UIEffects.spawnFloatingText(app, { target: defender, text: dmgLabel, type: fxType });
   if (guarded) {
-    UIEffects.spawnFloatingText(app, defender, 'GUARD!', 'miss');
-    createLog(app, isPlayer(defender) ? 'Guarded! The blow is halved.' : `${enemyName} guards the blow!`, null, 'shield');
+    UIEffects.spawnFloatingText(app, { target: defender, text: 'GUARD!', type: 'miss' });
+    createLog(app, {
+      text: isPlayer(defender) ? 'Guarded! The blow is halved.' : `${enemyName} guards the blow!`,
+      icon: 'shield',
+    });
     Sound.play('block');
   }
 
   if (type === 'special') {
     const label = moveName ? `SPECIAL: ${moveName}! ` : 'SPECIAL! ';
     Sound.play('special');
-    createLog(
-      app,
-      isPlayer(side)
+    createLog(app, {
+      text: isPlayer(side)
         ? `${label}You blasted ${enemyName} for ${finalDmg} DMG!`
         : `${label}${enemyName} blasted you for ${finalDmg} DMG!`,
-      'log-special',
-      'sparkles'
-    );
+      cls: 'log-special',
+      icon: 'sparkles',
+    });
   } else if (isCrit) {
-    createLog(
-      app,
-      isPlayer(side)
+    createLog(app, {
+      text: isPlayer(side)
         ? `CRITICAL HIT! You smashed ${enemyName} for ${finalDmg} DMG!`
         : `CRITICAL HIT! ${enemyName} smashed you for ${finalDmg} DMG!`,
-      'log-crit',
-      'bomb'
-    );
+      cls: 'log-crit',
+      icon: 'bomb',
+    });
     Sound.play('crit');
     UIEffects.triggerGlobalShake(app);
   } else {
-    createLog(
-      app,
-      isPlayer(side) ? `You hit ${enemyName} for ${finalDmg} DMG.` : `${enemyName} hit you for ${finalDmg} DMG.`,
-      isPlayer(side) ? null : 'log-enemy',
-      isPlayer(side) ? 'sword' : 'shield'
-    );
+    createLog(app, {
+      text: isPlayer(side) ? `You hit ${enemyName} for ${finalDmg} DMG.` : `${enemyName} hit you for ${finalDmg} DMG.`,
+      cls: isPlayer(side) ? null : 'log-enemy',
+      icon: isPlayer(side) ? 'sword' : 'shield',
+    });
     Sound.play('attack');
   }
 
-  const roller3 = isPlayer(side) ? `You're heating up!` : `${enemyName} is heating up — stop them!`;
-  const roller5 = isPlayer(side) ? `RUTHLESS!` : `${enemyName} is going berserk!`;
+  const heatingLine = isPlayer(side) ? `You're heating up!` : `${enemyName} is heating up — stop them!`;
+  const berserkLine = isPlayer(side) ? `RUTHLESS!` : `${enemyName} is going berserk!`;
   if (combo === 3) {
-    createLog(app, `COMBO x3! ${roller3}`, 'log-special', 'sparkles');
+    createLog(app, { text: `COMBO x3! ${heatingLine}`, cls: 'log-special', icon: 'sparkles' });
     Sound.play('combo');
   }
   if (combo === 5) {
-    createLog(app, `COMBO x5! ${roller5}`, 'log-special', 'sparkles');
+    createLog(app, { text: `COMBO x5! ${berserkLine}`, cls: 'log-special', icon: 'sparkles' });
     Sound.play('combo');
   }
   if (combo >= 5) UIEffects.triggerGlobalShake(app);
 }
 
-function resolveAction(app, side, action) {
+function resolveAction(app, { side, action }) {
   const enemyName = app.selectedPlayer.player2.name;
 
   if (action === 'heal') {
@@ -257,23 +272,27 @@ function resolveAction(app, side, action) {
     const used = Math.min(app.tracker[isPlayer(side) ? 'playerHeal' : 'enemyHeal'], BALANCE.heal.failChances.length - 1);
     const failChance = BALANCE.heal.failChances[used];
     if (!isGod(app, side) && Math.random() < failChance) {
-      UIEffects.spawnFloatingText(app, side, 'FAIL', 'miss');
-      createLog(app, isPlayer(side) ? `The medkit was EMPTY! (+0 HP)` : `${enemyName}'s medkit was empty!`, null, 'wind');
+      UIEffects.spawnFloatingText(app, { target: side, text: 'FAIL', type: 'miss' });
+      createLog(app, {
+        text: isPlayer(side) ? `The medkit was EMPTY! (+0 HP)` : `${enemyName}'s medkit was empty!`,
+        icon: 'wind',
+      });
       Sound.play('healFail');
       return;
     }
     Sound.play('heal');
     const healAmount = calcDamage(BALANCE.heal.min, BALANCE.heal.max);
     app.health[side] = Math.min(100, app.health[side] + healAmount);
-    UIEffects.spawnFloatingText(app, side, `+${healAmount}`, 'heal');
+    UIEffects.spawnFloatingText(app, { target: side, text: `+${healAmount}`, type: 'heal' });
     const left = BALANCE.heal.charges - app.tracker[isPlayer(side) ? 'playerHeal' : 'enemyHeal'];
     const leftLabel = left > 0 ? ` (${left} left)` : ' (final medkit!)';
-    createLog(
-      app,
-      isPlayer(side) ? `You used a Medkit (+${healAmount} HP).${leftLabel}` : `${enemyName} used a Medkit (+${healAmount} HP).${leftLabel}`,
-      'log-heal',
-      'heart'
-    );
+    createLog(app, {
+      text: isPlayer(side)
+        ? `You used a Medkit (+${healAmount} HP).${leftLabel}`
+        : `${enemyName} used a Medkit (+${healAmount} HP).${leftLabel}`,
+      cls: 'log-heal',
+      icon: 'heart',
+    });
     return;
   }
 
@@ -281,9 +300,12 @@ function resolveAction(app, side, action) {
     // Bracing sacrifices offence and combo, but banks meter safely
     app.combo[side] = 0;
     app.guard[side] = true;
-    gainMeter(app, side, BALANCE.defend.meterGain);
-    UIEffects.spawnFloatingText(app, side, 'GUARD', 'miss');
-    createLog(app, isPlayer(side) ? `You raise your guard! Next hit -50%` : `${enemyName} raises their guard!`, null, 'shield');
+    gainMeter(app, { side, amount: BALANCE.defend.meterGain });
+    UIEffects.spawnFloatingText(app, { target: side, text: 'GUARD', type: 'miss' });
+    createLog(app, {
+      text: isPlayer(side) ? `You raise your guard! Next hit -50%` : `${enemyName} raises their guard!`,
+      icon: 'shield',
+    });
     Sound.play('defend');
     return;
   }
@@ -297,27 +319,30 @@ function resolveAction(app, side, action) {
     if (missed) {
       app.specialPity[side] = true;
       app.combo[side] = 0;
-      gainMeter(app, side, BALANCE.special.meterGainWhiff);
-      UIEffects.spawnFloatingText(app, other(side), 'MISS', 'miss');
-      createLog(app, isPlayer(side) ? `WHIFF! Your Special missed! (next one can't miss)` : `${enemyName}'s Special WHIFFED!`, null, 'wind');
+      gainMeter(app, { side, amount: BALANCE.special.meterGainWhiff });
+      UIEffects.spawnFloatingText(app, { target: other(side), text: 'MISS', type: 'miss' });
+      createLog(app, {
+        text: isPlayer(side) ? `WHIFF! Your Special missed! (next one can't miss)` : `${enemyName}'s Special WHIFFED!`,
+        icon: 'wind',
+      });
       Sound.play('miss');
       return;
     }
     const attacker = app.selectedPlayer[side];
-    const fx = attacker && attacker.id ? SPECIAL_FX[attacker.id] : null;
+    const signature = attacker && attacker.id ? SPECIAL_FX[attacker.id] : null;
     const willCombo = (app.combo[side] || 0) + 1;
-    if (fx) UIEffects.spawnSpecialFx(attacker.id, willCombo >= 3);
+    if (signature) UIEffects.spawnSpecialFx(attacker.id, willCombo >= 3);
     const dmg = calcDamage(BALANCE.special.min, BALANCE.special.max) * godMultiplier(app, side);
-    applyDamage(app, side, dmg, 'special', false, fx ? fx.move : null);
+    applyDamage(app, { side, dmg, type: 'special', isCrit: false, moveName: signature ? signature.move : null });
     return;
   }
 
   // Normal attack (god mode: doubled crit chance, never misses)
   if (!isGod(app, side) && Math.random() < BALANCE.attack.missChance) {
     app.combo[side] = 0;
-    gainMeter(app, side, BALANCE.special.meterGainWhiff);
-    UIEffects.spawnFloatingText(app, other(side), 'MISS', 'miss');
-    createLog(app, isPlayer(side) ? `You swung at air!` : `${enemyName} swung at air!`, null, 'wind');
+    gainMeter(app, { side, amount: BALANCE.special.meterGainWhiff });
+    UIEffects.spawnFloatingText(app, { target: other(side), text: 'MISS', type: 'miss' });
+    createLog(app, { text: isPlayer(side) ? `You swung at air!` : `${enemyName} swung at air!`, icon: 'wind' });
     Sound.play('miss');
     return;
   }
@@ -325,7 +350,7 @@ function resolveAction(app, side, action) {
   const isCrit = Math.random() < critChance;
   let dmg = calcDamage(BALANCE.attack.min, BALANCE.attack.max) * godMultiplier(app, side);
   if (isCrit) dmg *= BALANCE.attack.critMult;
-  applyDamage(app, side, dmg, 'attack', isCrit);
+  applyDamage(app, { side, dmg, type: 'attack', isCrit });
 }
 
 function chooseEnemyAction(app) {
@@ -416,8 +441,13 @@ function surrender(app) {
   app.health.player1 = 0;
   app.isSurrender = true;
   recordResult(app, false);
-  createLog(app, 'SIGNAL LOST: You surrendered.', 'log-surrender', 'flag');
+  createLog(app, { text: 'SIGNAL LOST: You surrendered.', cls: 'log-surrender', icon: 'flag' });
   gameOver(app);
+}
+
+function pickOpponent(app) {
+  const pool = app.players.filter((candidate) => candidate.id !== app.selectedPlayer.player1.id && !candidate.isSecret);
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function startNewBattle(app, rematch = false) {
@@ -425,13 +455,7 @@ function startNewBattle(app, rematch = false) {
   const currentOpponent = app.selectedPlayer.player2;
   const keepOpponent =
     rematch && currentOpponent && currentOpponent.id && currentOpponent.id !== app.selectedPlayer.player1.id;
-  if (!keepOpponent) {
-    let opponent;
-    do {
-      opponent = app.players[Math.floor(Math.random() * app.players.length)];
-    } while (opponent.id === app.selectedPlayer.player1.id || opponent.isSecret);
-    app.selectedPlayer.player2 = opponent;
-  }
+  if (!keepOpponent) app.selectedPlayer.player2 = pickOpponent(app);
   app.selectedPlayer.player1.isChampion = false;
   app.selectedPlayer.player2.isChampion = false;
   app.status.play = true;
@@ -458,15 +482,18 @@ function startNewBattle(app, rematch = false) {
   UIEffects.clearWeather();
   app.battleMenuIndex = 0;
 
-  createLog(app, 'A NEW CHALLENGER APPROACHES!', null, 'zap');
+  createLog(app, { text: 'A NEW CHALLENGER APPROACHES!', icon: 'zap' });
 
   const playerStarts = Math.random() < 0.5;
   if (playerStarts) {
     app.turnInProgress = false;
-    createLog(app, 'You strike first — make it count!', null, 'arrow-big-up');
+    createLog(app, { text: 'You strike first — make it count!', icon: 'arrow-big-up' });
   } else {
     app.turnInProgress = true;
-    createLog(app, `${app.selectedPlayer.player2.name} strikes first — brace yourself!`, null, 'warning-diamond');
+    createLog(app, {
+      text: `${app.selectedPlayer.player2.name} strikes first — brace yourself!`,
+      icon: 'warning-diamond',
+    });
     scheduleEnemyTurn(app, 2400);
   }
 }
@@ -476,7 +503,7 @@ function playerAttack(app, type) {
   if (type === 'special' && !specialReady(app, 'player1')) return;
   beginTurn(app, 'player1');
   app.turnInProgress = true;
-  resolveAction(app, 'player1', type === 'special' ? 'special' : 'attack');
+  resolveAction(app, { side: 'player1', action: type === 'special' ? 'special' : 'attack' });
   if (!checkWinner(app)) scheduleEnemyTurn(app, 1200);
 }
 
@@ -485,7 +512,7 @@ function playerHeal(app) {
   beginTurn(app, 'player1');
   app.turnInProgress = true;
   app.tracker.playerHeal++;
-  resolveAction(app, 'player1', 'heal');
+  resolveAction(app, { side: 'player1', action: 'heal' });
   scheduleEnemyTurn(app, 1200);
 }
 
@@ -493,7 +520,7 @@ function playerDefend(app) {
   if (app.turnInProgress) return;
   beginTurn(app, 'player1');
   app.turnInProgress = true;
-  resolveAction(app, 'player1', 'defend');
+  resolveAction(app, { side: 'player1', action: 'defend' });
   scheduleEnemyTurn(app, 1200);
 }
 
@@ -502,7 +529,7 @@ function enemyTurn(app) {
   beginTurn(app, 'player2');
   const action = chooseEnemyAction(app);
   if (action === 'heal') app.tracker.enemyHeal++;
-  resolveAction(app, 'player2', action);
+  resolveAction(app, { side: 'player2', action });
   if (!checkWinner(app)) {
     app.turnInProgress = false;
     Sound.play('turnReady');
@@ -525,9 +552,9 @@ function reBattle(app) {
 
 /**
  * Battle engine — deterministic combat resolution over the shared reactive app state.
+ * Functions take `(app, payload)` — the reactive root as receiver, a single options object.
  * Public API: { startNewBattle, beginNextRound, playerAttack, playerHeal,
- * playerDefend, enemyTurn, checkWinner, executeBattleAction, reBattle, surrender,
- * cancelTurn }.
+ * playerDefend, enemyTurn, executeBattleAction, reBattle, surrender, cancelTurn }.
  */
 export default {
   startNewBattle,
@@ -536,7 +563,6 @@ export default {
   playerHeal,
   playerDefend,
   enemyTurn,
-  checkWinner,
   executeBattleAction,
   reBattle,
   surrender,

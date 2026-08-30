@@ -282,11 +282,11 @@ export default {
     }, 500);
   },
 
-  spawnFloatingText(app, targetPlayer, text, type) {
+  spawnFloatingText(app, { target, text, type }) {
     const id = Date.now() + Math.random();
-    app.activeFx[targetPlayer].push({ id, text, type });
+    app.activeFx[target].push({ id, text, type });
     setTimeout(() => {
-      app.activeFx[targetPlayer] = app.activeFx[targetPlayer].filter((fx) => fx.id !== id);
+      app.activeFx[target] = app.activeFx[target].filter((fx) => fx.id !== id);
     }, 1000);
   },
 

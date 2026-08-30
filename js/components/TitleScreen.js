@@ -1,3 +1,5 @@
+/** TitleScreen — presentation component (Imperative Shell, Vue 2 object syntax). */
+
 export default {
   name: 'title-screen',
   template: `

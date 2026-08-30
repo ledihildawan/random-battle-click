@@ -68,8 +68,7 @@ const app = new Vue({
       turnBanner: null,
       globalShake: false,
       loadingProgress: 0,
-      isDialogOpen: false, // Extra flag for manual dialog handling
-      muted: Sound.muted,
+      isDialogOpen: false,
 
       // Cheats
       inputBuffer: [],
@@ -185,7 +184,7 @@ const app = new Vue({
   },
 
   methods: {
-    _onSplashSkip(e) {
+    _onSplashSkip() {
       this.showSplash = false;
     },
     loadStats() {
@@ -262,21 +261,9 @@ const app = new Vue({
       }
 
       if (this.status.play && !this.status.winner && !this.turnInProgress && !this.battleIntro) {
-        const actionKey = key;
-        if (actionKey === 'z') {
-          this.battleMenuIndex = 0;
-          this.executeBattleAction();
-        }
-        if (actionKey === 'x') {
-          this.battleMenuIndex = 1;
-          this.executeBattleAction();
-        }
-        if (actionKey === 'c') {
-          this.battleMenuIndex = 2;
-          this.executeBattleAction();
-        }
-        if (actionKey === 'v') {
-          this.battleMenuIndex = 3;
+        const actionIndex = { z: 0, x: 1, c: 2, v: 3 }[key];
+        if (actionIndex !== undefined) {
+          this.battleMenuIndex = actionIndex;
           this.executeBattleAction();
         }
 
@@ -298,7 +285,6 @@ const app = new Vue({
 
       if (this.status.winner) {
         const menuCount = this.rematchAvailable ? 3 : 2;
-        // --- 1. Navigasi Panah (Multi-dimensi) ---
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           this.battleMenuIndex = (this.battleMenuIndex + 1) % menuCount;
           Sound.play('move');
@@ -308,29 +294,24 @@ const app = new Vue({
           Sound.play('move');
         }
 
-        // --- 2. Shortcut Key Instan ---
-        // Tekan 'R' untuk Rematch (hanya jika tersedia)
-        if (e.key.toLowerCase() === 'r') {
+        if (key === 'r') {
           if (this.rematchAvailable) this.reBattle();
           return;
         }
-        // Tekan 'Esc' untuk kembali ke Menu
         if (e.key === 'Escape') {
           this.backToTitle();
           return;
         }
-        // Tekan 'N' untuk New Character (Opsional)
-        if (e.key.toLowerCase() === 'n') {
+        if (key === 'n') {
           this.goToSelectScreen();
           return;
         }
 
-        // --- 3. Eksekusi Menu Berdasarkan Pilihan Index (Enter) ---
         if (e.key === 'Enter') {
           if (this.rematchAvailable) {
-            if (this.battleMenuIndex === 0) this.reBattle(); // Rematch
-            else if (this.battleMenuIndex === 1) this.goToSelectScreen(); // New Match
-            else this.backToTitle(); // Back to Menu
+            if (this.battleMenuIndex === 0) this.reBattle();
+            else if (this.battleMenuIndex === 1) this.goToSelectScreen();
+            else this.backToTitle();
           } else {
             if (this.battleMenuIndex === 0) this.goToSelectScreen(); // New Match
             else this.backToTitle(); // Back to Menu
@@ -370,7 +351,7 @@ const app = new Vue({
     },
 
     toggleMute() {
-      this.muted = Sound.toggleMute();
+      Sound.toggleMute();
     },
 
     activateCheat() {
@@ -521,21 +502,10 @@ const app = new Vue({
       BattleEngine.reBattle(this);
     },
 
-    gameOver() {
-      this.status.play = false;
-      this.status.winner = true;
-      this.turnInProgress = false;
-      this.battleMenuIndex = 0;
-    },
-
-    // Delegated to BattleEngine
-
-    createLog(text, cls, icon) {
-      this.logs.push({ text, cls, icon });
+    createLog(entry) {
+      this.logs.push({ text: entry.text, cls: entry.cls, icon: entry.icon });
       if (this.logs.length > 60) this.logs.splice(0, this.logs.length - 60);
     },
-
-    // Visual effects delegated to UIEffects
 
     playerAttack(type) {
       BattleEngine.playerAttack(this, type);

@@ -1,3 +1,5 @@
+/** SelectScreen — presentation component (Imperative Shell, Vue 2 object syntax). */
+
 import { onAvatarError } from '../services/avatarFallback.js';
 
 export default {
