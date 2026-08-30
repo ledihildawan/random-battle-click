@@ -103,10 +103,10 @@
   }
 }
 
-/* screen-select overrides */
-.screen-select .nes-container .title {
-  color: var(--panel-text) !important;
-  background-color: var(--panel-bg) !important;
+/* screen-select overrides (specificity out-weighs nes.css .nes-container.is-dark > .title) */
+.screen-select .nes-container.is-dark > .title {
+  color: var(--panel-text);
+  background-color: var(--panel-bg);
 }
 .screen-select .nes-container > p {
   color: var(--panel-text);

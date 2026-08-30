@@ -44,7 +44,10 @@ const sanitizeFighterStats = (raw) => {
   if (!raw || typeof raw !== 'object') return {};
   const clean = {};
   for (const [id, entry] of Object.entries(raw)) {
-    if (entry && typeof entry === 'object') clean[id] = entry;
+    // defineProperty bypasses the __proto__ setter: prototype-pollution-safe
+    if (entry && typeof entry === 'object' && id !== '__proto__' && id !== 'constructor' && id !== 'prototype') {
+      Object.defineProperty(clean, id, { value: entry, enumerable: true, writable: true, configurable: true });
+    }
   }
   return clean;
 };
