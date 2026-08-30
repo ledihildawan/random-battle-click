@@ -22,6 +22,9 @@ export default {
           <button type="button" class="nes-btn" @click="$emit('cycle-difficulty')">
             <pixel-icon name="sword" :size="12"></pixel-icon> {{ difficultyLabel }} <span class="key-hint">[D]</span>
           </button>
+          <button type="button" class="nes-btn is-primary" @click="$emit('view-stats')">
+            <pixel-icon name="star" :size="12"></pixel-icon> Stats <span class="key-hint">[S]</span>
+          </button>
         </div>
       </div>
 

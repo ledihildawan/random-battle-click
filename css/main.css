@@ -19,6 +19,7 @@
 @import 'components/select-screen.css';
 @import 'components/title-screen.css';
 @import 'components/winner-screen.css';
+@import 'components/stats-screen.css';
 @import 'components/logs-terminal.css';
 @import 'components/give-up-dialog.css';
 

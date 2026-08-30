@@ -8,6 +8,7 @@ import SelectScreen from './components/SelectScreen.js';
 import SplashScreen from './components/SplashScreen.js';
 import TitleScreen from './components/TitleScreen.js';
 import WinnerScreen from './components/WinnerScreen.js';
+import StatsScreen from './components/StatsScreen.js';
 import BattleEngine, { BALANCE } from './services/battleEngine.js';
 import UIEffects from './services/uiEffects.js';
 import Sound from './services/soundEngine.js';
@@ -64,6 +65,7 @@ Vue.component('pixel-icon', PixelIcon);
 Vue.component('splash-screen', SplashScreen);
 Vue.component('title-screen', TitleScreen);
 Vue.component('winner-screen', WinnerScreen);
+Vue.component('stats-screen', StatsScreen);
 Vue.component('select-screen', SelectScreen);
 Vue.component('player-card', PlayerCard);
 Vue.component('command-center', CommandCenter);
@@ -92,6 +94,7 @@ const app = new Vue({
       activeFx: { player1: [], player2: [] },
 
       showSplash: true,
+      viewingStats: false,
       status: {
         selecting: false,
         loading: false,
@@ -162,7 +165,7 @@ const app = new Vue({
   computed: {
     isTitleScreen() {
       return (
-        !this.showSplash && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
+        !this.showSplash && !this.viewingStats && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
       );
     },
     isVictory() {
@@ -345,6 +348,15 @@ const app = new Vue({
         if (e.key === 'Enter') this.goToSelectScreen();
         if (key === 'a') this.startArcade();
         if (key === 'd') this.cycleDifficulty();
+        if (key === 's') this.viewingStats = true;
+        return;
+      }
+
+      if (this.viewingStats) {
+        if (e.key === 'Escape') {
+          Sound.play('back');
+          this.viewingStats = false;
+        }
         return;
       }
 
@@ -519,6 +531,13 @@ const app = new Vue({
         this.selectConfirm = null;
         this.startLoading();
       }, 380);
+    },
+
+    resetAllStats() {
+      this.stats = { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0 };
+      this.fighterStats = {};
+      this.saveStats();
+      Sound.play('back');
     },
 
     backToTitle() {

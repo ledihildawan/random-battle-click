@@ -48,7 +48,17 @@
           @start="goToSelectScreen"
           @arcade="startArcade"
           @cycle-difficulty="cycleDifficulty"
+          @view-stats="viewingStats = true"
         ></title-screen>
+
+        <stats-screen
+          v-if="viewingStats"
+          :stats="stats"
+          :fighter-stats="fighterStats"
+          :players="players"
+          @reset="resetAllStats"
+          @back="viewingStats = false"
+        ></stats-screen>
 
         <select-screen
           v-if="status.selecting"

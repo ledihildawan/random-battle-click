@@ -1,0 +1,172 @@
+/* Component: StatsScreen */
+.screen-stats {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Global stats header */
+.stats-header {
+  padding: 20px;
+}
+.stats-global {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+  margin-top: 16px;
+}
+.global-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+.global-label {
+  font-size: 7px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.global-value {
+  font-size: 14px;
+  color: var(--text-color);
+}
+.global-value.is-success {
+  color: var(--success);
+}
+.global-value.is-error {
+  color: var(--danger);
+}
+
+/* Nemesis card */
+.stats-nemesis {
+  padding: 16px 20px;
+}
+.nemesis-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--danger);
+}
+.nemesis-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.nemesis-label {
+  font-size: 7px;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+.nemesis-name {
+  font-size: 11px;
+  color: var(--danger);
+}
+.nemesis-detail {
+  font-size: 7px;
+  color: var(--muted-high);
+}
+.nemesis-avatar {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  border: 3px solid var(--danger);
+  background: var(--panel-bg);
+}
+
+/* Fighter roster table */
+.stats-roster {
+  padding: 20px;
+}
+.roster-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 12px;
+}
+.roster-header,
+.roster-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+}
+.roster-header {
+  border-bottom: 2px solid var(--border);
+  font-size: 7px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.roster-row {
+  font-size: 9px;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--bg-12);
+}
+.roster-row.is-best {
+  background: rgba(146, 204, 65, 0.08);
+  border-left: 3px solid var(--success);
+}
+.roster-avatar {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  border: 2px solid var(--panel-text);
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.col-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.col-record,
+.col-rate,
+.col-combo,
+.col-rounds {
+  text-align: center;
+}
+.col-rate.is-success {
+  color: var(--success);
+}
+.col-rate.is-error {
+  color: var(--danger);
+}
+
+/* Actions */
+.stats-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.stats-actions .nes-btn {
+  margin: 0;
+}
+.reset-warning {
+  font-size: 9px;
+  color: var(--danger);
+  letter-spacing: 1px;
+}
+
+@media (max-width: 600px) {
+  .roster-header,
+  .roster-row {
+    grid-template-columns: 1.5fr 1fr 1fr 0.8fr 0.8fr;
+    font-size: 8px;
+  }
+  .stats-global {
+    gap: 8px 16px;
+  }
+  .global-stat {
+    min-width: 60px;
+  }
+}
