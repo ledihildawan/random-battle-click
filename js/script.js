@@ -450,6 +450,7 @@ const app = new Vue({
       clearTimeout(this._fightSoundTimer);
       clearTimeout(this._koTimer);
       clearTimeout(this._roundTimer);
+      clearTimeout(this._bannerTimer);
       clearInterval(this._hpAnimInterval);
       this.cancelLoadingTimers();
       BattleEngine.cancelTurn(this);

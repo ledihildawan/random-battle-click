@@ -1,50 +1,53 @@
-# Random Battle Click
+# Retro Battle: Console Edition
 
-A simple, retro-style turn-based battle game built with Vue.js 2, featuring random player matchups and classic NES-inspired pixel art design.
+A retro arcade turn-based battler. Vanilla ES modules + Vue 2 (global build), zero
+bundler, zero npm dependencies — open `index.html` and play. Font is self-hosted;
+works fully offline.
 
-## Description
+## Gameplay
 
-Random Battle Click is a fun, lightweight browser game where two randomly selected fighters face off in a turn-based battle. Players can attack, use a powerful special attack, heal (limited to 3 times), or surrender. The game tracks health, win counts, and battle logs in real-time, all wrapped in a nostalgic 8-bit aesthetic using NES.css.
+- **10 fighters**, each with a signature special (name, color, particle FX)
+- **Best-of-1/3/5 matches** (setting on the select screen, persisted)
+- Four actions, fully symmetric for player and CPU:
+  - **Attack `Z`** — reliable 6–10, 7% whiff, 15% crit (×2)
+  - **Special `X`** — 12–20, needs a full **super meter** (charged by landing
+    +30 / enduring +20 / whiffing +10); 25% miss with pity (next one connects);
+    meter carries across rounds — bank it for the decider
+  - **Heal `C`** — 12–20 HP, 3 medkits **per match** with escalating fail
+    risk (5% / 15% / 30%); failure still burns the charge
+  - **Defend `V`** — halve the next incoming blow (+25 meter, costs tempo)
+- **Combo system** — consecutive hits build ×1.1 (x3) / ×1.2 (x5) damage,
+  banners, screen shake; healing/defending/whiffing breaks it
+- **Lifesteal** — every landed hit drains 25% of the damage dealt
+- **Loser's initiative** — round 1 is a coin flip; afterwards the previous
+  round's loser strikes first
+- CPU AI reads public state only (your charged meter makes it brace)
 
-## Features
+## Systems
 
-- Random player selection with avatars and names
-- Turn-based combat: Attack, Special Attack, Heal (3 uses), Give Up
-- Health bars with dynamic color changes
-- Win counter with crown for the champion
-- Battle log with alternating colored entries
-- Responsive design (works on mobile and desktop)
-- Retro NES-style UI
+- **Stats** — global record, win streaks, best combo, per-fighter records and
+  CPU-nemesis counts; persisted in `localStorage` (god-mode battles never count)
+- **Konami code** (`↑↑↓↓←→←→BA`) on the title screen unlocks DEV GOD
+- **Sound** — procedural chiptune (Web Audio), auto-unlocks on first input,
+  ~25 contextual cues; `M` toggles mute (persisted)
+- **Cinematics** — interface assembly intro, FIGHT!/ROUND N letterbox,
+  K.O. freeze, per-character special FX, victory confetti / defeat rain /
+  surrender fog (weather depends on the HP you surrendered at)
 
-## How to Play
+## Controls
 
-1. Click **Start Game** to begin
-2. Two random fighters will appear
-3. Use the action buttons:
-   - **Attack**: Deal normal damage to opponent
-   - **Special Attack**: Deal higher damage
-   - **Heal**: Restore health for both (limited to 3 times)
-   - **Give Up**: End the battle early
-4. Battle continues until one player's health reaches zero
-5. Winner gets a crown and +1 win
-6. Choose to **Re-Battle** or **Exit**
+| Screen | Keys |
+|---|---|
+| Anywhere | `M` mute |
+| Title | `Enter` start, konami code |
+| Select | arrows navigate, `Enter` confirm, `R` cycles rounds, `Esc` back |
+| Battle | `Z`/`X`/`C`/`V` actions, `←→` menu, `Enter` execute, `Esc` give up |
+| Dialog | arrows/`Tab` switch, `Enter` confirm, `Esc` cancel |
+| Winner | arrows navigate, `Enter` execute, `R` rematch, `N` new match, `Esc` menu |
 
-## Technologies Used
+## Architecture
 
-- Vue.js 2
-- NES.css (for retro styling)
-- Vanilla JavaScript
-- HTML5 & CSS3
-
-## Setup & Run Locally
-
-1. Clone or download the project
-2. Open `index.html` in your browser
-3. No build tools or server required — it runs directly!
-
-## Credits
-
-- UI Design inspired by NES.css by [BcRikko](https://github.com/BcRikko/NES.css)
-- Built as a fun Vue.js practice project
-
-Enjoy the battle! ⚔️
+See `AGENTS.md` for the engineering guidelines and the host-stack constraint
+map. Layout: `js/components` (Vue presentation) → `js/services` (battleEngine
+domain core + shell adapters) → `js/utils` (pure helpers). No cycles, imports
+flow strictly downwards.

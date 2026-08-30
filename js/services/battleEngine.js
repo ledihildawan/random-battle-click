@@ -555,7 +555,7 @@ function reBattle(app) {
  * Battle engine — deterministic combat resolution over the shared reactive app state.
  * Functions take `(app, payload)` — the reactive root as receiver, a single options object.
  * Public API: { startNewBattle, beginNextRound, playerAttack, playerHeal,
- * playerDefend, enemyTurn, executeBattleAction, reBattle, surrender, cancelTurn }.
+ * playerDefend, executeBattleAction, reBattle, surrender, cancelTurn }.
  */
 export default {
   startNewBattle,
@@ -563,7 +563,6 @@ export default {
   playerAttack,
   playerHeal,
   playerDefend,
-  enemyTurn,
   executeBattleAction,
   reBattle,
   surrender,

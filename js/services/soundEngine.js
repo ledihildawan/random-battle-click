@@ -13,7 +13,7 @@ const readMutedPreference = () => {
  * Creates the chiptune sound engine.
  * Auto-unlocks the AudioContext on the first user gesture (no activation UI);
  * the mute preference persists in localStorage.
- * @returns {Readonly<{play: (name: string) => void, toggleMute: () => boolean, autoUnlock: () => void, muted: boolean}>}
+ * @returns {Readonly<{play: (name: string) => void, toggleMute: () => boolean, muted: boolean}>}
  */
 const createSoundEngine = () => {
   let ctx = null;
@@ -198,7 +198,6 @@ const createSoundEngine = () => {
   return Object.freeze({
     play,
     toggleMute,
-    autoUnlock,
     get muted() {
       return muted;
     },
