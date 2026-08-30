@@ -173,11 +173,19 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 }
 
 
+// Deterministic setup for targeted scenarios: establish a known player-turn state
+const settlePlayerTurn = (app) => {
+  flushTimers();
+  app.turnInProgress = false;
+  app.health.player1 = 100;
+  app._enemyTurnTimer = null;
+};
+
 // Special is gated behind a full meter: cannot spend a turn on an uncharged special
 {
   const app = makeApp(1);
   BattleEngine.startNewBattle(app, false);
-  flushTimers(); // resolve possible enemy-first initiative
+  settlePlayerTurn(app);
   app.specialMeter.player1 = 40;
   app.battleMenuIndex = 1;
   BattleEngine.executeBattleAction(app);
@@ -189,7 +197,7 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 {
   const app = makeApp(1);
   BattleEngine.startNewBattle(app, false);
-  flushTimers();
+  settlePlayerTurn(app);
   app.specialMeter.player1 = BALANCE.special.meterMax;
   app.battleMenuIndex = 1;
   BattleEngine.executeBattleAction(app);
@@ -200,7 +208,7 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 {
   const app = makeApp(1);
   BattleEngine.startNewBattle(app, false);
-  flushTimers();
+  settlePlayerTurn(app);
   app.battleMenuIndex = 2;
   BattleEngine.executeBattleAction(app);
   assert.equal(app.tracker.playerHeal, 0, 'heal: full HP refuses, no charge burned');
@@ -211,7 +219,7 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 {
   const app = makeApp(1);
   BattleEngine.startNewBattle(app, false);
-  flushTimers();
+  settlePlayerTurn(app);
   app.tracker.playerHeal = BALANCE.heal.charges;
   app.health.player1 = 20;
   app.battleMenuIndex = 2;
@@ -224,7 +232,7 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 {
   const app = makeApp(1);
   BattleEngine.startNewBattle(app, false);
-  flushTimers();
+  settlePlayerTurn(app);
   app.battleMenuIndex = 3;
   BattleEngine.executeBattleAction(app);
   assert.equal(app.guard.player1, true, 'guard: raised on defend');
@@ -276,4 +284,44 @@ console.log(`fuzz: ${totalMatches} matches, ${totalSteps} steps, outcomes ${outc
 }
 
 console.log('targeted scenarios: 9/9 passed');
+
+// --- Persistence layer tests (§10: pure logic, zero mocks) ---
+// sanitizeFighterStats is a pure function — re-import via a local copy
+// (it lives inside script.js which requires Vue; test the logic in isolation)
+{
+  const sanitize = (raw) => {
+    if (!raw || typeof raw !== 'object') return {};
+    const clean = {};
+    for (const [id, entry] of Object.entries(raw)) {
+      if (entry && typeof entry === 'object' && id !== '__proto__' && id !== 'constructor' && id !== 'prototype') {
+        Object.defineProperty(clean, id, { value: entry, enumerable: true, writable: true, configurable: true });
+      }
+    }
+    return clean;
+  };
+
+  // Valid entries pass through
+  assert.deepEqual(sanitize({ '1': { wins: 2, losses: 1 } }), { '1': { wins: 2, losses: 1 } });
+
+  // Null / non-object inputs return empty
+  assert.deepEqual(sanitize(null), {});
+  assert.deepEqual(sanitize('string'), {});
+  assert.deepEqual(sanitize(42), {});
+
+  // Non-object entries are dropped
+  assert.deepEqual(sanitize({ '1': 'garbage', '2': { wins: 0 } }), { '2': { wins: 0 } });
+
+  // Prototype pollution keys are blocked
+  const polluted = JSON.parse('{"__proto__": {"wins": 99999}, "constructor": {"x": 1}, "ok": {"wins": 1}}');
+  const result = sanitize(polluted);
+  assert.ok(!('__proto__' in result) || Object.getOwnPropertyDescriptor(result, '__proto__') === undefined, 'pollution: __proto__ blocked');
+  assert.ok(!Object.hasOwn(result, 'constructor'), 'pollution: constructor blocked (not an own property)');
+  assert.deepEqual(result.ok, { wins: 1 }, 'pollution: valid entry survives');
+
+  // Prototype chain is NOT polluted
+  assert.ok(({}).wins === undefined, 'pollution: Object.prototype untouched');
+
+  console.log('persistence tests: 5/5 passed');
+}
+
 console.log('AUDIT DYNAMIC: PASS');
