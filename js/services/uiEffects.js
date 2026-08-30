@@ -1,5 +1,5 @@
 // UI Effects Service (ES module)
-import deepFreeze from '../utils/deepFreeze.js';
+import { SPECIAL_FX } from './signatureFx.js';
 
 const prefersReducedMotion =
   typeof window !== 'undefined' &&
@@ -10,19 +10,7 @@ const prefersReducedMotion =
  * Per-character signature special attacks, keyed by fighter id.
  * Frozen at module load. `move` doubles as the log-facing move name.
  */
-export const SPECIAL_FX = deepFreeze({
-  1: { type: 'slash', color: '#209cee', move: 'BLADE WALTZ' },
-  2: { type: 'coins', color: '#f7d51d', move: 'GOLD RUSH' },
-  3: { type: 'flame', color: '#e76e55', move: 'PHOENIX INFERNO' },
-  4: { type: 'hearts', color: '#ff6b9d', move: 'HEARTBREAK STORM' },
-  5: { type: 'bolt', color: '#7be0ff', move: 'THUNDER VERDICT' },
-  6: { type: 'poison', color: '#92cc41', move: 'VENOM GARDEN' },
-  7: { type: 'wind', color: '#ffffff', move: 'GALE SLICER' },
-  8: { type: 'stars', color: '#f7d51d', move: 'STARFALL' },
-  9: { type: 'ice', color: '#7be0ff', move: 'GLACIER EDGE' },
-  10: { type: 'quake', color: '#b9b9c2', move: 'AFTERSHOCK' },
-  999: { type: 'godrays', color: '#f7d51d', move: 'DIVINE JUDGMENT' },
-});
+
 
 const randRange = (a, b) => Math.random() * (b - a) + a;
 
@@ -290,14 +278,14 @@ export default {
     }, 1000);
   },
 
-  getAtmosphereHost() {
+  _getAtmosphereHost() {
     return document.querySelector('.winner-atmosphere') || document.getElementById('confetti-container');
   },
 
   spawnConfetti() {
     if (prefersReducedMotion) return;
     // One continuous loop of staggered pieces (kept falling until cleared)
-    this._spawnConfettiBurst(this.getAtmosphereHost());
+    this._spawnConfettiBurst(this._getAtmosphereHost());
   },
 
   _spawnConfettiBurst(container) {
@@ -331,7 +319,7 @@ export default {
 
   spawnRain(opts = {}) {
     if (prefersReducedMotion) return;
-    const container = this.getAtmosphereHost();
+    const container = this._getAtmosphereHost();
     if (!container) return;
     const dropCount = opts.count || 70;
     const baseDuration = opts.fast ? 0.3 : 0.5;
@@ -352,7 +340,7 @@ export default {
 
   spawnFog() {
     if (prefersReducedMotion) return;
-    const container = this.getAtmosphereHost();
+    const container = this._getAtmosphereHost();
     if (!container) return;
 
     for (let i = 0; i < 6; i++) {

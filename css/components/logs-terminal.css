@@ -3,9 +3,8 @@
   margin-bottom: 24px;
 }
 .logs-terminal {
-  background-color: var(--bg-color) !important;
+  background-color: var(--bg-color);
   color: var(--terminal-green);
-  border-color: var(--panel-bg);
   height: 180px;
   overflow-y: auto;
   font-size: 11px;

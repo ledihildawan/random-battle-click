@@ -1,5 +1,6 @@
 // Battle Engine Service (ES module)
-import UIEffects, { SPECIAL_FX } from './uiEffects.js';
+import UIEffects from './uiEffects.js';
+import { SPECIAL_FX } from './signatureFx.js';
 import Sound from './soundEngine.js';
 import deepFreeze from '../utils/deepFreeze.js';
 
@@ -82,7 +83,7 @@ function checkWinner(app) {
     clearTurnTimer(app);
     app.turnInProgress = true;
     // Fairness: the round loser gets the next initiative
-    app.nextInitiative = 'player2';
+    app._nextInitiative = 'player2';
     app.roundIntro = true;
     return true;
   }
@@ -106,7 +107,7 @@ function checkWinner(app) {
     clearTurnTimer(app);
     app.turnInProgress = true;
     // Fairness: the round loser gets the next initiative
-    app.nextInitiative = 'player1';
+    app._nextInitiative = 'player1';
     app.roundIntro = true;
     return true;
   }
@@ -125,8 +126,8 @@ function beginNextRound(app) {
     createLog(app, { text: 'No medkits left. Bleed for it.', icon: 'warning-diamond' });
   }
   // Initiative: the previous round's loser strikes first (round 1 stays a coin flip)
-  const starter = app.nextInitiative || (Math.random() < 0.5 ? 'player1' : 'player2');
-  app.nextInitiative = null;
+  const starter = app._nextInitiative || (Math.random() < 0.5 ? 'player1' : 'player2');
+  app._nextInitiative = null;
   if (starter === 'player1') {
     app.turnInProgress = false;
     createLog(app, { text: `ROUND ${app.currentRound} — you strike first! Make it count!`, icon: 'arrow-big-up' });
@@ -476,7 +477,7 @@ function startNewBattle(app, rematch = false) {
   app.roundWins = { player1: 0, player2: 0 };
   app.currentRound = 1;
   app.roundIntro = false;
-  app.nextInitiative = null;
+  app._nextInitiative = null;
   app.logs = [];
   app.activeFx = { player1: [], player2: [] };
   UIEffects.clearWeather();

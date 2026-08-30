@@ -20,7 +20,7 @@ The mapping is explicit:
 Module taxonomy in this repo:
 
 - `js/utils/` — pure, domain-agnostic (currently `deepFreeze`).
-- `js/services/` — Imperative Shell adapters (`uiEffects`, `soundEngine`, `avatarFallback`) plus the Domain Core (`battleEngine`).
+- `js/services/` — Imperative Shell adapters (`uiEffects`, `soundEngine`, `avatarFallback`) plus the Domain Core (`battleEngine`) and pure domain data modules (`signatureFx`).
 - `js/components/` — Vue 2 presentation objects (Shell).
 
 Import flow is strictly downwards: `components` → `services` → `utils`. No upward imports. No cycles.
