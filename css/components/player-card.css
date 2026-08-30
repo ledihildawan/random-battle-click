@@ -1,18 +1,20 @@
 /* Component: PlayerCard */
 .players {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 30px;
-  gap: 10px;
+  gap: 16px;
+  margin-top: 14px;
+  margin-bottom: 24px;
 }
 .player-card {
   background: var(--panel-bg);
   color: var(--panel-text);
-  padding: 20px;
-  border-radius: var(--radius);
+  padding: 16px;
   position: relative;
-  width: 45%;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 420px;
   box-shadow: 0 4px 0 var(--shadow);
   transition: transform 0.2s;
 }
@@ -20,6 +22,105 @@
   border: 4px solid var(--warning);
   transform: translateY(-4px);
 }
+
+/* Super meter under the HP bar */
+.super-meter {
+  height: 6px;
+  margin-top: 8px;
+  background: var(--bg-35);
+  border: 1px solid var(--border);
+}
+.super-meter-fill {
+  height: 100%;
+  background: var(--warning);
+  transition: width 0.3s ease-out;
+}
+.super-meter.is-full .super-meter-fill {
+  animation: meter-full 0.8s steps(1) infinite;
+}
+@keyframes meter-full {
+  50% {
+    filter: brightness(1.6);
+  }
+}
+
+/* Active fighter idles with a classic 2-frame bob */
+.player-card.active-turn .player__avatar {
+  animation: idle-bob 0.8s steps(2) infinite;
+}
+@keyframes idle-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+/* Attack lunge: the attacker's card thrusts toward the opponent */
+.player-card--p1.lunge {
+  animation: lunge-right 0.28s ease-out;
+}
+.player-card--cpu.lunge {
+  animation: lunge-left 0.28s ease-out;
+}
+@keyframes lunge-right {
+  30% {
+    transform: translateX(26px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes lunge-left {
+  30% {
+    transform: translateX(-26px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* K.O.: the defeated fighter collapses and drains to grayscale */
+.player-card.ko-defeated {
+  animation: ko-fall 0.6s ease-in both;
+  filter: grayscale(100%);
+}
+@keyframes ko-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(10px) rotate(4deg);
+  }
+}
+
+/* Combo momentum badge */
+.combo-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: var(--warning);
+  color: var(--panel-text);
+  font-size: 8px;
+  padding: 3px 6px;
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+/* Guard badge: braced for the next hit */
+.guard-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  background: var(--bg-color);
+  color: var(--accent);
+  padding: 4px;
+  border: 2px solid var(--accent);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
 .player__media {
   position: relative;
   width: 100%;
@@ -43,24 +144,104 @@
   filter: grayscale(100%) contrast(1.2);
   opacity: 0.6;
 }
+
 .vs-badge {
   background: var(--danger);
   color: var(--text-color);
   padding: 8px 12px;
-  border-radius: 50%;
+  border-radius: 0;
   font-size: 14px;
   font-weight: bold;
   box-shadow: 4px 4px 0 var(--shadow);
   z-index: 5;
+  flex-shrink: 0;
   transform: rotate(-10deg);
 }
+
+/* VS column: badge + round score pips */
+.vs-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.round-tracker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.round-pip {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--muted);
+  background: transparent;
+}
+.round-pip.is-p1.is-won {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.round-pip.is-cpu.is-won {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+/* Fresh round win pops in */
+.round-pip.is-won {
+  animation: pip-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* The pip that would clinch the match blinks a warning */
+.round-pip.is-matchpoint {
+  animation: pip-blink 0.8s steps(1) infinite;
+}
+@keyframes pip-pop {
+  0% {
+    transform: scale(2.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes pip-blink {
+  50% {
+    border-color: var(--warning);
+    background: rgba(247, 213, 29, 0.35);
+  }
+}
+.round-tracker-sep {
+  width: 2px;
+  height: 12px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* Custom pill badge: auto-width flex segments (nes-badge is fixed-em and overlaps on narrow cards) */
 .identity-badge {
   position: absolute;
-  top: -10px;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+  display: inline-flex;
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 var(--shadow);
 }
+.identity-badge span {
+  padding: 4px 8px;
+  font-size: 8px;
+}
+.identity-badge .is-dark {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+.identity-badge .is-primary {
+  background: var(--accent);
+  color: var(--white);
+}
+.identity-badge .is-error {
+  background: var(--danger);
+  color: var(--white);
+}
+
 .player__name {
   margin-top: 0;
   margin-bottom: 8px;
@@ -81,4 +262,66 @@
   height: 20px;
   border-radius: 0;
   box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Small screens: keep the battle row compact and stable (no reflow from long names) */
+@media (max-width: 600px) {
+  .players {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .player-card {
+    padding: 12px;
+  }
+  .player__media {
+    height: 90px;
+    margin-bottom: 8px;
+  }
+  .player__avatar {
+    width: 80px;
+    height: 80px;
+  }
+  .player__name {
+    font-size: 9px;
+    min-height: 18px;
+  }
+  .hp-text {
+    font-size: 8px;
+  }
+  .vs-badge {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
+
+/* Phones: fighters stack vertically, lunges aim up/down */
+@media (max-width: 480px) {
+  .players {
+    flex-direction: column;
+  }
+  .player-card {
+    max-width: 100%;
+  }
+  .player-card--p1.lunge {
+    animation-name: lunge-down;
+  }
+  .player-card--cpu.lunge {
+    animation-name: lunge-up;
+  }
+}
+@keyframes lunge-down {
+  30% {
+    transform: translateY(26px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes lunge-up {
+  30% {
+    transform: translateY(-26px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }

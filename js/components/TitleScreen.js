@@ -4,15 +4,24 @@ export default {
     <div class="screen-title text-center fade-in">
       <div class="nes-container is-dark with-title is-centered">
         <p class="title">Insert Coin</p>
-        <p style="margin-bottom: 20px">Can you beat the CPU?</p>
-        <button type="button" class="nes-btn is-primary blink-anim" style="font-size: 20px; width: 100%" @click="$emit('start')">
+        <p class="title-lead">The CPU shows no mercy.</p>
+        <p class="title-record" v-if="wins + losses > 0">
+          RECORD {{ wins }}W - {{ losses }}L<span v-if="streak >= 2"> • STREAK {{ streak }}</span><span v-else-if="bestStreak >= 3"> • BEST {{ bestStreak }}</span>
+        </p>
+        <button type="button" class="nes-btn is-primary title-cta blink-anim" @click="$emit('start')">
           Press Start <span class="key-hint">[ENTER]</span>
         </button>
       </div>
-      <div style="margin-top: 20px; opacity: 0.6; font-size: 10px">
+      <div class="title-footer">
         v6.0 Console Edition<br />
-        Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A
+        SECRET CODE: ↑ ↑ ↓ ↓ ← → ← → B A
       </div>
     </div>
   `,
+  props: {
+    wins: { type: Number, default: 0 },
+    losses: { type: Number, default: 0 },
+    streak: { type: Number, default: 0 },
+    bestStreak: { type: Number, default: 0 },
+  },
 };

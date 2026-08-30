@@ -1,0 +1,32 @@
+/* Component: TitleScreen */
+.screen-title {
+  margin-top: 24px;
+}
+.title-lead {
+  margin-bottom: 12px;
+}
+.title-record {
+  margin: 0 0 16px;
+  font-size: 9px;
+  color: var(--warning);
+  letter-spacing: 1px;
+}
+.title-cta {
+  font-size: 20px;
+  width: 100%;
+}
+.title-footer {
+  margin-top: 20px;
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+/* Classic arcade blink for the CTA */
+.blink-anim {
+  animation: blink 1.2s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

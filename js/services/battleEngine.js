@@ -1,214 +1,534 @@
-// Battle Engine Service (global)
-window.BattleEngine = (function () {
-  const calcDamage = (min, max) => Math.max(Math.floor(Math.random() * max) + 1, min);
+// Battle Engine Service (ES module)
+import UIEffects, { SPECIAL_FX } from './uiEffects.js';
+import Sound from './soundEngine.js';
 
-  function createLog(app, message) {
-    if (typeof app.createLog === 'function') app.createLog(message);
+// Single source of truth for combat rules — both sides obey the exact same numbers.
+export const BALANCE = {
+  lifesteal: 0.25,
+  attack: { min: 6, max: 10, critChance: 0.15, critMult: 2, missChance: 0.07 },
+  special: { min: 12, max: 20, missChance: 0.25, meterMax: 100, meterGainHit: 30, meterGainTaken: 20, meterGainWhiff: 10 },
+  heal: { min: 12, max: 20, charges: 3, failChances: [0.05, 0.15, 0.3] },
+  defend: { reduction: 0.5, meterGain: 25 },
+};
+
+const calcDamage = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const other = (side) => (side === 'player1' ? 'player2' : 'player1');
+const isPlayer = (side) => side === 'player1';
+
+function createLog(app, text, cls, icon) {
+  if (typeof app.createLog === 'function') app.createLog(text, cls, icon);
+}
+
+function clearTurnTimer(app) {
+  if (app._enemyTurnTimer) {
+    clearTimeout(app._enemyTurnTimer);
+    app._enemyTurnTimer = null;
+  }
+}
+
+function scheduleEnemyTurn(app, delay) {
+  clearTurnTimer(app);
+  app._enemyTurnTimer = setTimeout(() => {
+    app._enemyTurnTimer = null;
+    enemyTurn(app);
+  }, delay);
+}
+
+function gameOver(app) {
+  clearTurnTimer(app);
+  app.status.play = false;
+  app.status.winner = true;
+  app.turnInProgress = false;
+  app.battleMenuIndex = 0;
+}
+
+function announceMatchPoint(app, needed) {
+  if (app.roundWins.player2 === needed - 1) {
+    createLog(app, `MATCH POINT — CPU! This is your last stand!`, 'log-enemy', 'warning-diamond');
+    Sound.play('matchPoint');
+  } else if (app.roundWins.player1 === needed - 1) {
+    createLog(app, `MATCH POINT — YOU! Finish it!`, 'log-special', 'trophy');
+    Sound.play('matchPoint');
+  }
+}
+
+function checkWinner(app) {
+  const needed = Math.ceil((app.roundsPerMatch || 1) / 2);
+
+  if (app.health.player2 <= 0) {
+    app.health.player2 = 0;
+    app.roundWins.player1 += 1;
+    if (app.roundWins.player1 >= needed) {
+      app.selectedPlayer.player1.isChampion = true;
+      recordResult(app, true);
+      createLog(app, `VICTORY! You dismantled ${app.selectedPlayer.player2.name}!`, 'log-victory', 'trophy');
+      gameOver(app);
+      return true;
+    }
+    createLog(app, `ROUND ${app.currentRound} — YOURS! (${app.roundWins.player1}-${app.roundWins.player2})`, 'log-special', 'trophy');
+    announceMatchPoint(app, needed);
+    clearTurnTimer(app);
+    app.turnInProgress = true;
+    // Fairness: the round loser gets the next initiative
+    app.nextInitiative = 'player2';
+    app.roundIntro = true;
+    return true;
   }
 
-  function gameOver(app) {
-    app.status.play = false;
-    app.status.winner = true;
+  if (app.health.player1 <= 0) {
+    app.health.player1 = 0;
+    app.roundWins.player2 += 1;
+    if (app.roundWins.player2 >= needed) {
+      app.selectedPlayer.player2.isChampion = true;
+      recordResult(app, false);
+      createLog(app, 'DEFEAT! Run it back.', 'log-defeat', 'skull');
+      gameOver(app);
+      return true;
+    }
+    createLog(app, `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} steals it! (${app.roundWins.player1}-${app.roundWins.player2})`, 'log-special', 'skull');
+    announceMatchPoint(app, needed);
+    clearTurnTimer(app);
+    app.turnInProgress = true;
+    // Fairness: the round loser gets the next initiative
+    app.nextInitiative = 'player1';
+    app.roundIntro = true;
+    return true;
+  }
+  return false;
+}
+
+function beginNextRound(app) {
+  clearTurnTimer(app);
+  app.currentRound += 1;
+  app.combo = { player1: 0, player2: 0 };
+  app.specialPity = { player1: false, player2: false };
+  app.guard = { player1: false, player2: false };
+  // Super meter carries across rounds — bank it for the decider
+  createLog(app, `ROUND ${app.currentRound}`, 'log-round');
+  if (BALANCE.heal.charges - app.tracker.playerHeal <= 0) {
+    createLog(app, `No medkits left. Bleed for it.`, null, 'warning-diamond');
+  }
+  // Initiative: the previous round's loser strikes first (round 1 stays a coin flip)
+  const starter = app.nextInitiative || (Math.random() < 0.5 ? 'player1' : 'player2');
+  app.nextInitiative = null;
+  if (starter === 'player1') {
     app.turnInProgress = false;
-    app.battleMenuIndex = 0;
+    createLog(app, `ROUND ${app.currentRound} — you strike first! Make it count!`, null, 'arrow-big-up');
+  } else {
+    app.turnInProgress = true;
+    createLog(app, `ROUND ${app.currentRound} — ${app.selectedPlayer.player2.name} strikes first — brace yourself!`, null, 'warning-diamond');
+    scheduleEnemyTurn(app, 2400);
+  }
+}
+
+function isGod(app, side) {
+  return isPlayer(side) && app.selectedPlayer.player1.id === 999;
+}
+
+function godMultiplier(app, side) {
+  return isGod(app, side) ? 2 : 1;
+}
+
+function beginTurn(app, side) {
+  if (isPlayer(side)) app.roundCount += 1;
+  // A guard lasts exactly one enemy turn: it expires when its owner acts again
+  app.guard[side] = false;
+}
+
+function gainMeter(app, sideKey, amount) {
+  const M = BALANCE.special;
+  const before = app.specialMeter[sideKey];
+  app.specialMeter[sideKey] = Math.min(M.meterMax, before + amount);
+  if (before < M.meterMax && app.specialMeter[sideKey] >= M.meterMax) {
+    if (sideKey === 'player1') {
+      createLog(app, 'SPECIAL READY — press X!', 'log-special', 'sparkles');
+      Sound.play('turnReady');
+    } else {
+      createLog(app, `${app.selectedPlayer.player2.name}'s special is CHARGED!`, 'log-enemy', 'sparkles');
+      Sound.play('matchPoint');
+    }
+  }
+}
+
+function specialReady(app, side) {
+  return app.specialMeter[side] >= BALANCE.special.meterMax;
+}
+
+function applyDamage(app, side, dmg, type, isCrit, moveName) {
+  const defender = other(side);
+  const enemyName = app.selectedPlayer.player2.name;
+
+  // Combo momentum: consecutive hits boost damage at tiers
+  app.combo[side] += 1;
+  const combo = app.combo[side];
+  if (combo > (app.battleMaxCombo || 0)) app.battleMaxCombo = combo;
+  const comboMult = combo >= 5 ? 1.2 : combo >= 3 ? 1.1 : 1;
+
+  let finalDmg = Math.round(dmg * comboMult);
+  // Guard: braced fighters halve the incoming blow (guard is consumed)
+  let guarded = false;
+  if (app.guard[defender]) {
+    app.guard[defender] = false;
+    guarded = true;
+    finalDmg = Math.max(1, Math.floor(finalDmg * (1 - BALANCE.defend.reduction)));
+  }
+  // God mode: incoming damage halved
+  if (isGod(app, defender)) finalDmg = Math.floor(finalDmg / 2);
+  app.health[defender] = Math.max(0, app.health[defender] - finalDmg);
+
+  // Lifesteal: landing a hit drains 25% of the damage dealt (both sides, no overheal)
+  const lifesteal = Math.round(finalDmg * BALANCE.lifesteal);
+  if (lifesteal > 0 && app.health[side] < 100) {
+    app.health[side] = Math.min(100, app.health[side] + lifesteal);
+    UIEffects.spawnFloatingText(app, side, `+${lifesteal}`, 'heal');
   }
 
-  function checkWinner(app) {
-    if (app.health.player2 <= 0) {
-      app.health.player2 = 0;
-      app.selectedPlayer.player1.name = `👑 ${app.selectedPlayer.player1.name}`;
-      app.stats.win.player1 += 1;
-      createLog(
-        app,
-        `<span style="color:#209cee; font-weight:bold;">🏆 VICTORY! You defeated ${app.selectedPlayer.player2.name}!</span>`
-      );
-      UIEffects.spawnConfetti();
-      gameOver(app);
-      return true;
-    }
-    if (app.health.player1 <= 0) {
-      app.health.player1 = 0;
-      app.selectedPlayer.player2.name = `👑 ${app.selectedPlayer.player2.name}`;
-      app.stats.win.player2 += 1;
-      createLog(app, `<span style="color:#e76e55; font-weight:bold;">💀 DEFEAT! You were eliminated.</span>`);
-      gameOver(app);
-      return true;
-    }
-    return false;
+  // Super meter: attacker charges by landing, defender by enduring
+  gainMeter(app, side, BALANCE.special.meterGainHit);
+  gainMeter(app, defender, BALANCE.special.meterGainTaken);
+
+  UIEffects.triggerVisualEffect(defender);
+  UIEffects.triggerAttackLunge(side);
+  const dmgLabel = combo >= 3 ? `-${finalDmg} x${combo}` : `-${finalDmg}`;
+  const fxType = type === 'special' ? 'special' : isCrit || combo >= 5 ? 'crit' : 'damage';
+  UIEffects.spawnFloatingText(app, defender, dmgLabel, fxType);
+  if (guarded) {
+    UIEffects.spawnFloatingText(app, defender, 'GUARD!', 'miss');
+    createLog(app, isPlayer(defender) ? 'Guarded! The blow is halved.' : `${enemyName} guards the blow!`, null, 'shield');
+    Sound.play('block');
   }
 
-  function startNewBattle(app) {
+  if (type === 'special') {
+    const label = moveName ? `SPECIAL: ${moveName}! ` : 'SPECIAL! ';
+    Sound.play('special');
+    createLog(
+      app,
+      isPlayer(side)
+        ? `${label}You blasted ${enemyName} for ${finalDmg} DMG!`
+        : `${label}${enemyName} blasted you for ${finalDmg} DMG!`,
+      'log-special',
+      'sparkles'
+    );
+  } else if (isCrit) {
+    createLog(
+      app,
+      isPlayer(side)
+        ? `CRITICAL HIT! You smashed ${enemyName} for ${finalDmg} DMG!`
+        : `CRITICAL HIT! ${enemyName} smashed you for ${finalDmg} DMG!`,
+      'log-crit',
+      'bomb'
+    );
+    Sound.play('crit');
+    UIEffects.triggerGlobalShake(app);
+  } else {
+    createLog(
+      app,
+      isPlayer(side) ? `You hit ${enemyName} for ${finalDmg} DMG.` : `${enemyName} hit you for ${finalDmg} DMG.`,
+      isPlayer(side) ? null : 'log-enemy',
+      isPlayer(side) ? 'sword' : 'shield'
+    );
+    Sound.play('attack');
+  }
+
+  const roller3 = isPlayer(side) ? `You're heating up!` : `${enemyName} is heating up — stop them!`;
+  const roller5 = isPlayer(side) ? `RUTHLESS!` : `${enemyName} is going berserk!`;
+  if (combo === 3) {
+    createLog(app, `COMBO x3! ${roller3}`, 'log-special', 'sparkles');
+    Sound.play('combo');
+  }
+  if (combo === 5) {
+    createLog(app, `COMBO x5! ${roller5}`, 'log-special', 'sparkles');
+    Sound.play('combo');
+  }
+  if (combo >= 5) UIEffects.triggerGlobalShake(app);
+}
+
+function resolveAction(app, side, action) {
+  const enemyName = app.selectedPlayer.player2.name;
+
+  if (action === 'heal') {
+    // Healing sacrifices combo momentum
+    app.combo[side] = 0;
+    // Medkits get riskier as the match drains the supplies
+    const used = Math.min(app.tracker[isPlayer(side) ? 'playerHeal' : 'enemyHeal'], BALANCE.heal.failChances.length - 1);
+    const failChance = BALANCE.heal.failChances[used];
+    if (!isGod(app, side) && Math.random() < failChance) {
+      UIEffects.spawnFloatingText(app, side, 'FAIL', 'miss');
+      createLog(app, isPlayer(side) ? `The medkit was EMPTY! (+0 HP)` : `${enemyName}'s medkit was empty!`, null, 'wind');
+      Sound.play('healFail');
+      return;
+    }
+    Sound.play('heal');
+    const healAmount = calcDamage(BALANCE.heal.min, BALANCE.heal.max);
+    app.health[side] = Math.min(100, app.health[side] + healAmount);
+    UIEffects.spawnFloatingText(app, side, `+${healAmount}`, 'heal');
+    const left = BALANCE.heal.charges - app.tracker[isPlayer(side) ? 'playerHeal' : 'enemyHeal'];
+    const leftLabel = left > 0 ? ` (${left} left)` : ' (final medkit!)';
+    createLog(
+      app,
+      isPlayer(side) ? `You used a Medkit (+${healAmount} HP).${leftLabel}` : `${enemyName} used a Medkit (+${healAmount} HP).${leftLabel}`,
+      'log-heal',
+      'heart'
+    );
+    return;
+  }
+
+  if (action === 'defend') {
+    // Bracing sacrifices offence and combo, but banks meter safely
+    app.combo[side] = 0;
+    app.guard[side] = true;
+    gainMeter(app, side, BALANCE.defend.meterGain);
+    UIEffects.spawnFloatingText(app, side, 'GUARD', 'miss');
+    createLog(app, isPlayer(side) ? `You raise your guard! Next hit -50%` : `${enemyName} raises their guard!`, null, 'shield');
+    Sound.play('defend');
+    return;
+  }
+
+  if (action === 'special') {
+    app.specialMeter[side] = 0;
+    // Pity rule: a missed special guarantees the next one connects
+    const guaranteed = app.specialPity[side];
+    app.specialPity[side] = false;
+    const missed = !guaranteed && !isGod(app, side) && Math.random() < BALANCE.special.missChance;
+    if (missed) {
+      app.specialPity[side] = true;
+      app.combo[side] = 0;
+      gainMeter(app, side, BALANCE.special.meterGainWhiff);
+      UIEffects.spawnFloatingText(app, other(side), 'MISS', 'miss');
+      createLog(app, isPlayer(side) ? `WHIFF! Your Special missed! (next one can't miss)` : `${enemyName}'s Special WHIFFED!`, null, 'wind');
+      Sound.play('miss');
+      return;
+    }
+    const attacker = app.selectedPlayer[side];
+    const fx = attacker && attacker.id ? SPECIAL_FX[attacker.id] : null;
+    const willCombo = (app.combo[side] || 0) + 1;
+    if (fx) UIEffects.spawnSpecialFx(attacker.id, willCombo >= 3);
+    const dmg = calcDamage(BALANCE.special.min, BALANCE.special.max) * godMultiplier(app, side);
+    applyDamage(app, side, dmg, 'special', false, fx ? fx.move : null);
+    return;
+  }
+
+  // Normal attack (god mode: doubled crit chance, never misses)
+  if (!isGod(app, side) && Math.random() < BALANCE.attack.missChance) {
+    app.combo[side] = 0;
+    gainMeter(app, side, BALANCE.special.meterGainWhiff);
+    UIEffects.spawnFloatingText(app, other(side), 'MISS', 'miss');
+    createLog(app, isPlayer(side) ? `You swung at air!` : `${enemyName} swung at air!`, null, 'wind');
+    Sound.play('miss');
+    return;
+  }
+  const critChance = BALANCE.attack.critChance * (isGod(app, side) ? 2 : 1);
+  const isCrit = Math.random() < critChance;
+  let dmg = calcDamage(BALANCE.attack.min, BALANCE.attack.max) * godMultiplier(app, side);
+  if (isCrit) dmg *= BALANCE.attack.critMult;
+  applyDamage(app, side, dmg, 'attack', isCrit);
+}
+
+function chooseEnemyAction(app) {
+  const enemyHp = app.health.player2;
+  const playerHp = app.health.player1;
+  const canHeal = app.tracker.enemyHeal < BALANCE.heal.charges;
+  const usedKits = Math.min(app.tracker.enemyHeal, BALANCE.heal.failChances.length - 1);
+  const kitRisk = BALANCE.heal.failChances[usedKits];
+  const ready = specialReady(app, 'player2');
+  const playerReady = specialReady(app, 'player1');
+  const avgSpecial = (BALANCE.special.min + BALANCE.special.max) / 2;
+
+  // Finisher: close out the fight when player is in lethal range
+  if (ready && playerHp > 0 && playerHp <= avgSpecial && Math.random() < 0.9) return 'special';
+  // Read the player: brace when their special is loaded and CPU is exposed
+  if (!app.guard.player2 && playerReady && enemyHp <= 50 && Math.random() < 0.45) return 'defend';
+  // Desperate block near death
+  if (!app.guard.player2 && enemyHp <= 15 && Math.random() < 0.25) return 'defend';
+  // Survival: heal when critically low — but the risky last medkit needs true desperation
+  if (canHeal) {
+    if (kitRisk >= 0.3) {
+      if (enemyHp <= 12 && Math.random() < 0.7) return 'heal';
+    } else {
+      if (enemyHp <= 18 && Math.random() < 0.85) return 'heal';
+      if (enemyHp <= 35 && Math.random() < 0.5) return 'heal';
+    }
+  }
+  // Tempo: mixed offence, obeying the same meter rules as the player
+  if (ready && Math.random() < 0.4) return 'special';
+  return 'attack';
+}
+
+function recordResult(app, won) {
+  // Cheat battles never touch the records
+  if (app.selectedPlayer.player1.id === 999) return;
+
+  if (won) app.stats.win.player1 += 1;
+  else app.stats.win.player2 += 1;
+
+  // Streaks & all-time best combo
+  if (won) {
+    app.stats.streak = (app.stats.streak || 0) + 1;
+    if (app.stats.streak > (app.stats.bestStreak || 0)) app.stats.bestStreak = app.stats.streak;
+  } else {
+    app.stats.streak = 0;
+  }
+  if (app.battleMaxCombo > (app.stats.maxCombo || 0)) app.stats.maxCombo = app.battleMaxCombo;
+
+  const readEntry = (id) => app.fighterStats[id] || { wins: 0, losses: 0 };
+
+  // Your fighter's record (as played by you)
+  const fighter = app.selectedPlayer.player1;
+  if (fighter && fighter.id) {
+    const entry = readEntry(fighter.id);
+    const updated = {
+      wins: (entry.wins || 0) + (won ? 1 : 0),
+      losses: (entry.losses || 0) + (won ? 0 : 1),
+      cpuWins: entry.cpuWins || 0,
+      cpuLosses: entry.cpuLosses || 0,
+      rounds: (entry.rounds || 0) + (app.roundCount || 0),
+      maxCombo: Math.max(entry.maxCombo || 0, app.battleMaxCombo || 0),
+    };
+    if (typeof app.$set === 'function') app.$set(app.fighterStats, fighter.id, updated);
+    else app.fighterStats[fighter.id] = updated;
+  }
+
+  // Opponent character's record (as CPU facing you)
+  const opponent = app.selectedPlayer.player2;
+  if (opponent && opponent.id && !opponent.isSecret) {
+    const entry = readEntry(opponent.id);
+    const updated = {
+      wins: entry.wins || 0,
+      losses: entry.losses || 0,
+      cpuWins: (entry.cpuWins || 0) + (won ? 0 : 1),
+      cpuLosses: (entry.cpuLosses || 0) + (won ? 1 : 0),
+    };
+    if (typeof app.$set === 'function') app.$set(app.fighterStats, opponent.id, updated);
+    else app.fighterStats[opponent.id] = updated;
+  }
+
+  if (typeof app.saveStats === 'function') app.saveStats();
+}
+
+function surrender(app) {
+  clearTurnTimer(app);
+  app.surrenderHp = app.health.player1;
+  app.surrenderEnemyHp = app.health.player2;
+  app.health.player1 = 0;
+  app.isSurrender = true;
+  recordResult(app, false);
+  createLog(app, 'SIGNAL LOST: You surrendered.', 'log-surrender', 'flag');
+  gameOver(app);
+}
+
+function startNewBattle(app, rematch = false) {
+  clearTurnTimer(app);
+  const currentOpponent = app.selectedPlayer.player2;
+  const keepOpponent =
+    rematch && currentOpponent && currentOpponent.id && currentOpponent.id !== app.selectedPlayer.player1.id;
+  if (!keepOpponent) {
     let opponent;
     do {
       opponent = app.players[Math.floor(Math.random() * app.players.length)];
-    } while (opponent.id === app.selectedPlayer.player1.id);
-
+    } while (opponent.id === app.selectedPlayer.player1.id || opponent.isSecret);
     app.selectedPlayer.player2 = opponent;
-    app.status.play = true;
-    app.status.winner = false;
-    app.health.player1 = 100;
-    app.health.player2 = 100;
-    app.tracker.playerHeal = 0;
-    app.tracker.enemyHeal = 0;
-    app.logs = [];
-    app.activeFx = { player1: [], player2: [] };
-    UIEffects.clearConfetti();
-    app.battleMenuIndex = 0;
-
-    createLog(app, 'System Initialized. Battle Start!');
-
-    const playerStarts = Math.random() < 0.5;
-    if (playerStarts) {
-      app.turnInProgress = false;
-      createLog(app, '🚀 INITIATIVE: You attack first!');
-    } else {
-      app.turnInProgress = true;
-      createLog(app, '⚠️ WARNING: Enemy attacks first!');
-      setTimeout(() => enemyTurn(app), 1500);
-    }
   }
+  app.selectedPlayer.player1.isChampion = false;
+  app.selectedPlayer.player2.isChampion = false;
+  app.status.play = true;
+  app.status.winner = false;
+  app.health.player1 = 100;
+  app.health.player2 = 100;
+  app.tracker.playerHeal = 0;
+  app.tracker.enemyHeal = 0;
+  app.specialMeter = { player1: 0, player2: 0 };
+  app.specialPity = { player1: false, player2: false };
+  app.guard = { player1: false, player2: false };
+  app.combo = { player1: 0, player2: 0 };
+  app.isSurrender = false;
+  app.surrenderHp = 0;
+  app.surrenderEnemyHp = 0;
+  app.roundCount = 0;
+  app.battleMaxCombo = 0;
+  app.roundWins = { player1: 0, player2: 0 };
+  app.currentRound = 1;
+  app.roundIntro = false;
+  app.nextInitiative = null;
+  app.logs = [];
+  app.activeFx = { player1: [], player2: [] };
+  UIEffects.clearWeather();
+  app.battleMenuIndex = 0;
 
-  function playerAttack(app, type) {
-    if (app.turnInProgress) return;
+  createLog(app, 'A NEW CHALLENGER APPROACHES!', null, 'zap');
+
+  const playerStarts = Math.random() < 0.5;
+  if (playerStarts) {
+    app.turnInProgress = false;
+    createLog(app, 'You strike first — make it count!', null, 'arrow-big-up');
+  } else {
     app.turnInProgress = true;
-    const p2Name = app.selectedPlayer.player2.name;
-    let damage = 0,
-      isCrit = false,
-      isMiss = false;
-
-    const isGod = app.selectedPlayer.player1.id === 999;
-    const multiplier = isGod ? 2 : 1;
-
-    if (type === 'normal') {
-      damage = calcDamage(3, 10) * multiplier;
-      if (Math.random() < 0.15) {
-        damage *= 2;
-        isCrit = true;
-      }
-    } else if (type === 'special') {
-      damage = calcDamage(10, 25) * multiplier;
-      if (Math.random() < 0.2) {
-        damage = 0;
-        isMiss = true;
-      }
-    }
-
-    if (isMiss) {
-      UIEffects.spawnFloatingText(app, 'player2', 'MISS', 'miss');
-      createLog(app, `💨 Attack MISSED on ${p2Name}!`);
-    } else {
-      app.health.player2 -= damage;
-      if (app.health.player2 < 0) app.health.player2 = 0;
-
-      UIEffects.triggerVisualEffect('player2');
-      if (type === 'special') {
-        UIEffects.spawnFloatingText(app, 'player2', `-${damage}`, 'special');
-        createLog(app, `✨ <span style="color:#f7d51d">SPECIAL!</span> You blasted ${p2Name} for ${damage} DMG!`);
-      } else {
-        UIEffects.spawnFloatingText(app, 'player2', `-${damage}`, isCrit ? 'crit' : 'damage');
-        if (isCrit) {
-          createLog(app, `<span style="color:#e76e55">💥 CRITICAL HIT!</span> You dealt ${damage} DMG!`);
-          UIEffects.triggerGlobalShake(app);
-        } else {
-          createLog(app, `🗡️ You hit ${p2Name} for ${damage} DMG.`);
-        }
-      }
-    }
-
-    if (!checkWinner(app)) setTimeout(() => enemyTurn(app), 1200);
+    createLog(app, `${app.selectedPlayer.player2.name} strikes first — brace yourself!`, null, 'warning-diamond');
+    scheduleEnemyTurn(app, 2400);
   }
+}
 
-  function playerHeal(app) {
-    if (app.turnInProgress || app.tracker.playerHeal >= app.limit.heal) return;
-    app.turnInProgress = true;
-    app.tracker.playerHeal++;
+function playerAttack(app, type) {
+  if (app.turnInProgress) return;
+  if (type === 'special' && !specialReady(app, 'player1')) return;
+  beginTurn(app, 'player1');
+  app.turnInProgress = true;
+  resolveAction(app, 'player1', type === 'special' ? 'special' : 'attack');
+  if (!checkWinner(app)) scheduleEnemyTurn(app, 1200);
+}
 
-    const healAmount = Math.floor(Math.random() * 15) + 10;
-    app.health.player1 += healAmount;
-    if (app.health.player1 > 100) app.health.player1 = 100;
+function playerHeal(app) {
+  if (app.turnInProgress || app.tracker.playerHeal >= BALANCE.heal.charges || app.health.player1 >= 100) return;
+  beginTurn(app, 'player1');
+  app.turnInProgress = true;
+  app.tracker.playerHeal++;
+  resolveAction(app, 'player1', 'heal');
+  scheduleEnemyTurn(app, 1200);
+}
 
-    UIEffects.spawnFloatingText(app, 'player1', `+${healAmount}`, 'heal');
-    createLog(app, `💊 REPAIR: You restored ${healAmount} HP.`);
-    setTimeout(() => enemyTurn(app), 1200);
+function playerDefend(app) {
+  if (app.turnInProgress) return;
+  beginTurn(app, 'player1');
+  app.turnInProgress = true;
+  resolveAction(app, 'player1', 'defend');
+  scheduleEnemyTurn(app, 1200);
+}
+
+function enemyTurn(app) {
+  if (app.status.winner || !app.status.play) return;
+  beginTurn(app, 'player2');
+  const action = chooseEnemyAction(app);
+  if (action === 'heal') app.tracker.enemyHeal++;
+  resolveAction(app, 'player2', action);
+  if (!checkWinner(app)) {
+    app.turnInProgress = false;
+    Sound.play('turnReady');
   }
+}
 
-  function enemyTurn(app) {
-    if (app.status.winner) return;
-    const p2Name = app.selectedPlayer.player2.name;
-    let action = 'attack';
+function executeBattleAction(app) {
+  if (app.turnInProgress) return;
+  if (app.battleMenuIndex === 0) playerAttack(app, 'normal');
+  else if (app.battleMenuIndex === 1) playerAttack(app, 'special');
+  else if (app.battleMenuIndex === 2) playerHeal(app);
+  else if (app.battleMenuIndex === 3) playerDefend(app);
+}
 
-    const canHeal = app.tracker.enemyHeal < app.limit.heal;
-    const isLowHp = app.health.player2 < 40;
+function reBattle(app) {
+  clearTurnTimer(app);
+  app.status.winner = false;
+  if (typeof app.startLoading === 'function') app.startLoading(true);
+}
 
-    if (isLowHp && canHeal && Math.random() < 0.4) action = 'heal';
-    else if (Math.random() < 0.25) action = 'special';
-
-    if (action === 'heal') {
-      app.tracker.enemyHeal++;
-      const healAmount = Math.floor(Math.random() * 15) + 10;
-      app.health.player2 += healAmount;
-      if (app.health.player2 > 100) app.health.player2 = 100;
-      UIEffects.spawnFloatingText(app, 'player2', `+${healAmount}`, 'heal');
-      createLog(app, `💊 <span style="color:#e76e55">${p2Name}</span> used a Medkit (+${healAmount} HP).`);
-    } else {
-      let damage = 0,
-        isCrit = false,
-        isMiss = false;
-      if (action === 'special') {
-        damage = calcDamage(10, 25);
-        if (Math.random() < 0.2) isMiss = true;
-      } else {
-        damage = calcDamage(3, 10);
-        if (Math.random() < 0.15) {
-          damage *= 2;
-          isCrit = true;
-        }
-      }
-
-      if (isMiss) {
-        UIEffects.spawnFloatingText(app, 'player1', 'MISS', 'miss');
-        createLog(app, `💨 ${p2Name} tried a Special Attack but MISSED!`);
-      } else {
-        app.health.player1 -= damage;
-        if (app.health.player1 < 0) app.health.player1 = 0;
-
-        UIEffects.triggerVisualEffect('player1');
-        if (action === 'special') {
-          UIEffects.spawnFloatingText(app, 'player1', `-${damage}`, 'special');
-          createLog(app, `✨ ${p2Name} used <span style="color:#f7d51d">SPECIAL ATTACK</span> for ${damage} DMG!`);
-        } else {
-          UIEffects.spawnFloatingText(app, 'player1', `-${damage}`, isCrit ? 'crit' : 'damage');
-          if (isCrit) {
-            createLog(app, `<span style="color:#e76e55">⚠️ CRITICAL HIT!</span> ${p2Name} hit you for ${damage}!`);
-            UIEffects.triggerGlobalShake(app);
-          } else {
-            createLog(app, `🛡️ ${p2Name} attacks! You took ${damage} damage.`);
-          }
-        }
-      }
-    }
-
-    if (!checkWinner(app)) app.turnInProgress = false;
-  }
-
-  function executeBattleAction(app) {
-    if (app.battleMenuIndex === 0) playerAttack(app, 'normal');
-    if (app.battleMenuIndex === 1) playerAttack(app, 'special');
-    if (app.battleMenuIndex === 2) playerHeal(app);
-  }
-
-  function reBattle(app) {
-    app.status.winner = false;
-    if (typeof app.startLoading === 'function') app.startLoading();
-  }
-
-  return {
-    startNewBattle,
-    playerAttack,
-    playerHeal,
-    enemyTurn,
-    checkWinner,
-    executeBattleAction,
-    reBattle,
-  };
-})();
+export default {
+  startNewBattle,
+  beginNextRound,
+  playerAttack,
+  playerHeal,
+  playerDefend,
+  enemyTurn,
+  checkWinner,
+  executeBattleAction,
+  reBattle,
+  surrender,
+  cancelTurn: clearTurnTimer,
+};

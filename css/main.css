@@ -3,6 +3,7 @@
    from index.html. Files are imported in order so that `style.css`
    can contain final overrides. */
 
+@import 'fonts.css';
 @import 'variables.css';
 @import 'nes.css';
 @import 'base.css';
@@ -11,13 +12,15 @@
 @import 'effects.css';
 
 /* Component CSS (explicit list) */
+@import 'components/brand-logo.css';
+@import 'components/battle-intro.css';
 @import 'components/player-card.css';
 @import 'components/command-center.css';
 @import 'components/select-screen.css';
 @import 'components/title-screen.css';
+@import 'components/winner-screen.css';
 @import 'components/logs-terminal.css';
 @import 'components/give-up-dialog.css';
-@import 'components/loading-screen.css';
 
 /* Project overrides placed last */
 @import 'style.css';

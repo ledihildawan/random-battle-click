@@ -1,23 +1,30 @@
 import CommandCenter from './components/CommandCenter.js';
 import GiveUpDialog from './components/GiveUpDialog.js';
-import LoadingScreen from './components/LoadingScreen.js';
 import LogsTerminal from './components/LogsTerminal.js';
+import BrandLogo from './components/BrandLogo.js';
+import PixelIcon from './components/PixelIcon.js';
 import PlayerCard from './components/PlayerCard.js';
 import SelectScreen from './components/SelectScreen.js';
 import SplashScreen from './components/SplashScreen.js';
 import TitleScreen from './components/TitleScreen.js';
+import WinnerScreen from './components/WinnerScreen.js';
+import BattleEngine, { BALANCE } from './services/battleEngine.js';
+import UIEffects from './services/uiEffects.js';
+import Sound from './services/soundEngine.js';
+
+const STATS_KEY = 'rbc-stats-v1';
 
 // Register components (using global Vue provided by ./js/vue.js)
+Vue.component('brand-logo', BrandLogo);
+Vue.component('pixel-icon', PixelIcon);
 Vue.component('splash-screen', SplashScreen);
 Vue.component('title-screen', TitleScreen);
+Vue.component('winner-screen', WinnerScreen);
 Vue.component('select-screen', SelectScreen);
-Vue.component('loading-screen', LoadingScreen);
 Vue.component('player-card', PlayerCard);
 Vue.component('command-center', CommandCenter);
 Vue.component('logs-terminal', LogsTerminal);
 Vue.component('give-up-dialog', GiveUpDialog);
-
-Vue.config.devtools = true;
 
 const app = new Vue({
   el: '#app',
@@ -25,16 +32,16 @@ const app = new Vue({
   data() {
     return {
       players: [
-        { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg' },
-        { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg' },
-        { id: 3, name: 'Phoenix Walker', avatar: 'player-3.jpg' },
-        { id: 4, name: 'Judy Sewell', avatar: 'player-4.jpg' },
-        { id: 5, name: 'Victor Hansen', avatar: 'player-5.jpg' },
-        { id: 6, name: 'Alisa Hester', avatar: 'player-6.jpg' },
-        { id: 7, name: 'Kelis Ford', avatar: 'player-7.jpg' },
-        { id: 8, name: 'Rene Wells', avatar: 'player-8.jpg' },
-        { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg' },
-        { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg' },
+        { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg', isChampion: false },
+        { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg', isChampion: false },
+        { id: 3, name: 'Phoenix Walker', avatar: 'player-3.jpg', isChampion: false },
+        { id: 4, name: 'Judy Sewell', avatar: 'player-4.jpg', isChampion: false },
+        { id: 5, name: 'Victor Hansen', avatar: 'player-5.jpg', isChampion: false },
+        { id: 6, name: 'Alisa Hester', avatar: 'player-6.jpg', isChampion: false },
+        { id: 7, name: 'Kelis Ford', avatar: 'player-7.jpg', isChampion: false },
+        { id: 8, name: 'Rene Wells', avatar: 'player-8.jpg', isChampion: false },
+        { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg', isChampion: false },
+        { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg', isChampion: false },
       ],
       selectedPlayer: { player1: {}, player2: {} },
       health: { player1: 100, player2: 100 },
@@ -46,38 +53,63 @@ const app = new Vue({
         loading: false,
         play: false,
         winner: false,
-        giveUp: false,
       },
 
       tempSelection: null,
       focusedCharIndex: 0,
       battleMenuIndex: 0,
       turnInProgress: false,
+      battleIntro: false,
+      battleAssembling: false,
+      koActive: false,
+      koLoser: null,
+      cheatGlitch: false,
+      selectConfirm: null,
+      turnBanner: null,
       globalShake: false,
       loadingProgress: 0,
       isDialogOpen: false, // Extra flag for manual dialog handling
+      muted: Sound.muted,
 
       // Cheats
       inputBuffer: [],
       konamiCode: [
-        'ArrowUp',
-        'ArrowUp',
-        'ArrowDown',
-        'ArrowDown',
-        'ArrowLeft',
-        'ArrowRight',
-        'ArrowLeft',
-        'ArrowRight',
+        'arrowup',
+        'arrowup',
+        'arrowdown',
+        'arrowdown',
+        'arrowleft',
+        'arrowright',
+        'arrowleft',
+        'arrowright',
         'b',
         'a',
       ],
       cheatActivated: false,
 
-      limit: { heal: 3 },
+      limit: { heal: BALANCE.heal.charges },
       tracker: { playerHeal: 0, enemyHeal: 0 },
-      stats: { win: { player1: 0, player2: 0 } },
+      specialMeter: { player1: 0, player2: 0 },
+      specialPity: { player1: false, player2: false },
+      guard: { player1: false, player2: false },
+      combo: { player1: 0, player2: 0 },
+      isSurrender: false,
+      surrenderHp: 0,
+      surrenderEnemyHp: 0,
+      roundCount: 0,
+      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0 },
+      battleMaxCombo: 0,
+      roundsPerMatch: 1,
+      roundWins: { player1: 0, player2: 0 },
+      currentRound: 1,
+      roundIntro: false,
+      fighterStats: {},
       logs: [],
     };
+  },
+
+  created() {
+    this.loadStats();
   },
 
   computed: {
@@ -86,17 +118,64 @@ const app = new Vue({
         !this.showSplash && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
       );
     },
+    isVictory() {
+      return this.health.player2 <= 0;
+    },
+    winsNeeded() {
+      return Math.ceil(this.roundsPerMatch / 2);
+    },
+    battleIntroText() {
+      return this.currentRound > 1 ? `ROUND ${this.currentRound}` : 'FIGHT!';
+    },
+    rematchAvailable() {
+      return this.roundsPerMatch <= 1 || this.roundWins.player1 > 0;
+    },
+  },
+
+  watch: {
+    'status.winner'(val) {
+      if (!val) {
+        UIEffects.clearWeather();
+        return;
+      }
+      // K.O. beat before the winner screen (white flag surrender skips it)
+      if (this.isSurrender) return;
+      this.koActive = true;
+      this.koLoser = this.isVictory ? 'p2' : 'p1';
+      Sound.play('ko');
+      clearTimeout(this._koTimer);
+      this._koTimer = setTimeout(() => {
+        this.koActive = false;
+        this.koLoser = null;
+      }, 1400);
+    },
+    roundIntro(val) {
+      if (!val) return;
+      this.koActive = true;
+      this.koLoser = this.isVictory ? 'p2' : 'p1';
+      Sound.play('ko');
+      clearTimeout(this._roundTimer);
+      this._roundTimer = setTimeout(() => {
+        this.koActive = false;
+        this.koLoser = null;
+        BattleEngine.beginNextRound(this);
+        this.playBattleIntro();
+        // Bars recharge from wherever they are (already-full bars stay still)
+        this.animateHealthToFull();
+        this.roundIntro = false;
+      }, 1400);
+    },
+    turnInProgress(val) {
+      if (this.battleIntro || this.roundIntro || this.koActive || !this.status.play || this.status.winner) return;
+      this.showTurnBanner(val);
+    },
   },
 
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
     UIEffects.initSnow();
-    // Splash Timer Matches CSS Animation (2.5s + buffer)
-    setTimeout(() => {
-      this.showSplash = false;
-    }, 3000);
 
-    // Allow splash component to request an early skip
+    // Splash closes only via user input (splash:skip event from SplashScreen)
     window.addEventListener('splash:skip', this._onSplashSkip);
   },
 
@@ -109,12 +188,50 @@ const app = new Vue({
     _onSplashSkip(e) {
       this.showSplash = false;
     },
+    loadStats() {
+      try {
+        const raw = localStorage.getItem(STATS_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved && saved.stats && saved.stats.win) this.stats = { ...this.stats, ...saved.stats };
+        if (saved && saved.fighterStats) this.fighterStats = saved.fighterStats;
+        if (saved && saved.settings && [1, 3, 5].includes(saved.settings.rounds)) {
+          this.roundsPerMatch = saved.settings.rounds;
+        }
+      } catch (e) {
+        // corrupted/unavailable storage: keep session defaults
+      }
+    },
+    saveStats() {
+      try {
+        localStorage.setItem(
+          STATS_KEY,
+          JSON.stringify({ stats: this.stats, fighterStats: this.fighterStats, settings: { rounds: this.roundsPerMatch } })
+        );
+      } catch (e) {
+        // storage unavailable: stay session-only
+      }
+    },
+    cycleRounds() {
+      const options = [1, 3, 5];
+      const idx = options.indexOf(this.roundsPerMatch);
+      this.roundsPerMatch = options[(idx + 1) % options.length];
+      Sound.play('tick');
+      this.saveStats();
+    },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 'm') {
+        this.toggleMute();
+        return;
+      }
       if (this.showSplash || this.status.loading) return;
+      if (e.repeat) return;
 
       if (this.isTitleScreen) {
-        this.inputBuffer.push(e.key);
+        this.inputBuffer.push(e.key.toLowerCase());
         if (this.inputBuffer.length > 20) this.inputBuffer.shift();
         const bufferString = this.inputBuffer.slice(-this.konamiCode.length).join(',');
         const codeString = this.konamiCode.join(',');
@@ -129,55 +246,75 @@ const app = new Vue({
         if (e.key === 'ArrowLeft') this.moveGridFocus(-1, 0);
         if (e.key === 'ArrowDown') this.moveGridFocus(0, 1);
         if (e.key === 'ArrowUp') this.moveGridFocus(0, -1);
+        if (key === 'r') this.cycleRounds();
         if (e.key === 'Enter') this.confirmSelection();
         if (e.key === 'Escape') this.backToTitle();
         return;
       }
 
-      // Dialog Handling logic (Check visibility)
+      // Dialog: Escape cancels; Enter confirms the focused (safe default) button
       if (this.isDialogOpen) {
-        if (e.key === 'Escape') this.hideDialogGiveUp();
-        if (e.key === 'Enter') this.giveUp();
+        if (e.key === 'Escape') {
+          Sound.play('back');
+          this.hideDialogGiveUp();
+        }
         return;
       }
 
-      if (this.status.play && !this.status.winner && !this.turnInProgress) {
-        if (e.key === '1') {
+      if (this.status.play && !this.status.winner && !this.turnInProgress && !this.battleIntro) {
+        const actionKey = key;
+        if (actionKey === 'z') {
           this.battleMenuIndex = 0;
           this.executeBattleAction();
         }
-        if (e.key === '2') {
+        if (actionKey === 'x') {
           this.battleMenuIndex = 1;
           this.executeBattleAction();
         }
-        if (e.key === '3') {
+        if (actionKey === 'c') {
           this.battleMenuIndex = 2;
           this.executeBattleAction();
         }
+        if (actionKey === 'v') {
+          this.battleMenuIndex = 3;
+          this.executeBattleAction();
+        }
 
-        if (e.key === 'ArrowRight') this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 2);
-        if (e.key === 'ArrowLeft') this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
+        if (e.key === 'ArrowRight') {
+          this.battleMenuIndex = Math.min(this.battleMenuIndex + 1, 3);
+          Sound.play('move');
+        }
+        if (e.key === 'ArrowLeft') {
+          this.battleMenuIndex = Math.max(this.battleMenuIndex - 1, 0);
+          Sound.play('move');
+        }
 
         if (e.key === 'Enter') this.executeBattleAction();
-        if (e.key === 'Escape') this.showDialogGiveUp();
+        if (e.key === 'Escape') {
+          Sound.play('dialogOpen');
+          this.showDialogGiveUp();
+        }
       }
 
       if (this.status.winner) {
+        const menuCount = this.rematchAvailable ? 3 : 2;
         // --- 1. Navigasi Panah (Multi-dimensi) ---
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-          this.battleMenuIndex = (this.battleMenuIndex + 1) % 3;
+          this.battleMenuIndex = (this.battleMenuIndex + 1) % menuCount;
+          Sound.play('move');
         }
         if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          this.battleMenuIndex = (this.battleMenuIndex - 1 + 3) % 3;
+          this.battleMenuIndex = (this.battleMenuIndex - 1 + menuCount) % menuCount;
+          Sound.play('move');
         }
 
         // --- 2. Shortcut Key Instan ---
-        // Tekan 'R' untuk Rematch
+        // Tekan 'R' untuk Rematch (hanya jika tersedia)
         if (e.key.toLowerCase() === 'r') {
-          this.reBattle();
+          if (this.rematchAvailable) this.reBattle();
           return;
         }
-        // Tekan 'Esc' untuk kembali ke Title
+        // Tekan 'Esc' untuk kembali ke Menu
         if (e.key === 'Escape') {
           this.backToTitle();
           return;
@@ -190,9 +327,14 @@ const app = new Vue({
 
         // --- 3. Eksekusi Menu Berdasarkan Pilihan Index (Enter) ---
         if (e.key === 'Enter') {
-          if (this.battleMenuIndex === 0) this.goToSelectScreen(); // New Fighter
-          else if (this.battleMenuIndex === 1) this.reBattle(); // Rematch
-          else if (this.battleMenuIndex === 2) this.backToTitle(); // Exit
+          if (this.rematchAvailable) {
+            if (this.battleMenuIndex === 0) this.reBattle(); // Rematch
+            else if (this.battleMenuIndex === 1) this.goToSelectScreen(); // New Match
+            else this.backToTitle(); // Back to Menu
+          } else {
+            if (this.battleMenuIndex === 0) this.goToSelectScreen(); // New Match
+            else this.backToTitle(); // Back to Menu
+          }
         }
         return;
       }
@@ -224,16 +366,27 @@ const app = new Vue({
 
       this.focusedCharIndex = current;
       this.tempSelection = this.players[current];
+      Sound.play('move');
+    },
+
+    toggleMute() {
+      this.muted = Sound.toggleMute();
     },
 
     activateCheat() {
-      if (this.cheatActivated) return;
+      if (this.cheatActivated || this.players.some((p) => p.id === 999)) return;
       this.cheatActivated = true;
+      this.cheatGlitch = true;
+      Sound.play('cheat');
+      setTimeout(() => {
+        this.cheatGlitch = false;
+      }, 500);
       this.players.push({
         id: 999,
-        name: 'DEV GOD 👑',
+        name: 'DEV GOD',
         avatar: 'player-10.jpg',
         isSecret: true,
+        isChampion: false,
       });
       setTimeout(() => {
         this.cheatActivated = false;
@@ -245,9 +398,11 @@ const app = new Vue({
     },
 
     goToSelectScreen() {
+      Sound.play('select');
       this.status.selecting = true;
       this.status.play = false;
       this.status.winner = false;
+      this.selectConfirm = null;
       this.tempSelection = this.players[0];
       this.focusedCharIndex = 0;
     },
@@ -257,14 +412,38 @@ const app = new Vue({
       this.focusedCharIndex = index;
     },
 
+    resetCharFocus() {
+      const idx = this.players.indexOf(this.tempSelection);
+      this.focusedCharIndex = idx >= 0 ? idx : 0;
+    },
+
     confirmSelection() {
-      if (!this.tempSelection) return;
-      this.selectedPlayer.player1 = { ...this.tempSelection };
-      this.status.selecting = false;
-      this.startLoading();
+      if (!this.tempSelection || this.selectConfirm !== null) return;
+      Sound.play('select');
+      this.selectConfirm = this.tempSelection.id;
+      setTimeout(() => {
+        this.selectedPlayer.player1 = { ...this.tempSelection, isChampion: false };
+        this.status.selecting = false;
+        this.selectConfirm = null;
+        this.startLoading();
+      }, 380);
     },
 
     backToTitle() {
+      Sound.play('back');
+      this.battleIntro = false;
+      this.battleAssembling = false;
+      this.koActive = false;
+      this.koLoser = null;
+      this.roundIntro = false;
+      this.turnBanner = null;
+      clearTimeout(this._introTimer);
+      clearTimeout(this._fightSoundTimer);
+      clearTimeout(this._koTimer);
+      clearTimeout(this._roundTimer);
+      clearInterval(this._hpAnimInterval);
+      this.cancelLoadingTimers();
+      BattleEngine.cancelTurn(this);
       this.status.selecting = false;
       this.status.play = false;
       this.status.winner = false;
@@ -272,50 +451,74 @@ const app = new Vue({
       this.battleMenuIndex = 0;
     },
 
-    startLoading() {
+    startLoading(rematch = false) {
+      this.cancelLoadingTimers();
       this.status.loading = true;
       this.loadingProgress = 0;
-      const interval = setInterval(() => {
+      this._loadInterval = setInterval(() => {
         this.loadingProgress += 5;
         if (this.loadingProgress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            this.status.loading = false;
-            this.startNewBattle();
-          }, 500);
+          this.cancelLoadingTimers();
+          this.status.loading = false;
+          this.startNewBattle(rematch);
         }
       }, 50);
     },
 
-    startNewBattle() {
-      BattleEngine.startNewBattle(this);
+    cancelLoadingTimers() {
+      if (this._loadInterval) {
+        clearInterval(this._loadInterval);
+        this._loadInterval = null;
+      }
+    },
+
+    playBattleIntro() {
+      this.battleIntro = true;
+      this.turnBanner = null;
+      clearTimeout(this._introTimer);
+      clearTimeout(this._fightSoundTimer);
+      this._fightSoundTimer = setTimeout(() => Sound.play('fight'), 1300);
+      this._introTimer = setTimeout(() => {
+        this.battleIntro = false;
+        this.battleAssembling = false;
+        if (this.status.play && !this.status.winner && !this.turnInProgress) this.showTurnBanner(false);
+      }, 2100);
+    },
+
+    startNewBattle(rematch = false) {
+      this.roundIntro = false;
+      this.battleAssembling = true;
+      BattleEngine.startNewBattle(this, rematch);
+      this.playBattleIntro();
+    },
+
+    animateHealthToFull() {
+      clearInterval(this._hpAnimInterval);
+      this._hpAnimInterval = setInterval(() => {
+        let done = true;
+        ['player1', 'player2'].forEach((side) => {
+          if (this.health[side] < 100) {
+            this.health[side] = Math.min(100, this.health[side] + 20);
+            done = false;
+          }
+        });
+        if (done) {
+          clearInterval(this._hpAnimInterval);
+          this._hpAnimInterval = null;
+        }
+      }, 50);
+    },
+
+    showTurnBanner(isEnemy) {
+      this.turnBanner = { key: Date.now(), label: isEnemy ? 'ENEMY TURN' : 'YOUR TURN', side: isEnemy ? 'enemy' : 'you' };
+      clearTimeout(this._bannerTimer);
+      this._bannerTimer = setTimeout(() => {
+        this.turnBanner = null;
+      }, 950);
     },
 
     reBattle() {
       BattleEngine.reBattle(this);
-    },
-
-    checkWinner() {
-      if (this.health.player2 <= 0) {
-        this.health.player2 = 0;
-        this.selectedPlayer.player1.name = `👑 ${this.selectedPlayer.player1.name}`;
-        this.stats.win.player1 += 1;
-        this.createLog(
-          `<span style="color:#209cee; font-weight:bold;">🏆 VICTORY! You defeated ${this.selectedPlayer.player2.name}!</span>`
-        );
-        this.spawnConfetti();
-        this.gameOver();
-        return true;
-      }
-      if (this.health.player1 <= 0) {
-        this.health.player1 = 0;
-        this.selectedPlayer.player2.name = `👑 ${this.selectedPlayer.player2.name}`;
-        this.stats.win.player2 += 1;
-        this.createLog(`<span style="color:#e76e55; font-weight:bold;">💀 DEFEAT! You were eliminated.</span>`);
-        this.gameOver();
-        return true;
-      }
-      return false;
     },
 
     gameOver() {
@@ -327,14 +530,9 @@ const app = new Vue({
 
     // Delegated to BattleEngine
 
-    createLog(message) {
-      const logsContainer = document.querySelector('.logs-terminal');
-      this.logs.push(message);
-      if (logsContainer) {
-        this.$nextTick(() => {
-          logsContainer.scrollTo({ left: 0, top: logsContainer.scrollHeight, behavior: 'smooth' });
-        });
-      }
+    createLog(text, cls, icon) {
+      this.logs.push({ text, cls, icon });
+      if (this.logs.length > 60) this.logs.splice(0, this.logs.length - 60);
     },
 
     // Visual effects delegated to UIEffects
@@ -347,8 +545,8 @@ const app = new Vue({
       BattleEngine.playerHeal(this);
     },
 
-    enemyTurn() {
-      BattleEngine.enemyTurn(this);
+    playerDefend() {
+      BattleEngine.playerDefend(this);
     },
 
     showDialogGiveUp() {
@@ -360,60 +558,8 @@ const app = new Vue({
     },
 
     giveUp() {
-      this.createLog(`🏳️ SIGNAL LOST: Player surrendered.`);
-      this.health.player1 = 0;
-      this.status.play = false;
-      this.status.winner = true;
+      BattleEngine.surrender(this);
       this.hideDialogGiveUp();
-    },
-
-    // FUNCTION IS NOW CORRECTLY INSIDE METHODS
-    healthBarColorStatus(value) {
-      return {
-        'is-primary': value > 50,
-        'is-warning': value > 20 && value <= 50,
-        'is-error': value <= 20,
-      };
-    },
-
-    initSnow() {
-      const container = document.getElementById('snow-container');
-      const snowCount = 60; // Sedikit lebih banyak untuk kedalaman
-
-      for (let i = 0; i < snowCount; i++) {
-        const snow = document.createElement('div');
-        snow.className = 'snow-pixel';
-
-        // Mengatur "Depth" (Kedalaman) secara acak
-        const sizeType = Math.random();
-        let size = 4; // Ukuran pixel standar
-        let opacity = 0.8;
-        let duration = Math.random() * 3 + 4; // Lebih lambat
-
-        if (sizeType < 0.3) {
-          // Salju jauh (kecil & lambat)
-          size = 2;
-          opacity = 0.4;
-          duration = Math.random() * 5 + 7;
-        } else if (sizeType > 0.8) {
-          // Salju dekat (besar & cepat)
-          size = 6;
-          opacity = 0.9;
-          duration = Math.random() * 2 + 3;
-        }
-
-        // Terapkan Style
-        snow.style.width = `${size}px`;
-        snow.style.height = `${size}px`;
-        snow.style.opacity = opacity;
-        snow.style.left = Math.random() * 100 + 'vw';
-
-        // Animasi
-        snow.style.animationDuration = `${duration}s, ${Math.random() * 2 + 2}s`;
-        snow.style.animationDelay = `${Math.random() * 5}s, ${Math.random() * 2}s`;
-
-        container.appendChild(snow);
-      }
     },
   },
 });

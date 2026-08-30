@@ -1,7 +1,14 @@
+import { onAvatarError } from '../services/avatarFallback.js';
+
 export default {
   name: 'player-card',
   template: `
-    <div class="player-card nes-container is-rounded" :class="{ 'active-turn': activeTurn }">
+    <div
+      class="player-card nes-container is-rounded"
+      :class="['player-card--' + side, { 'active-turn': activeTurn, 'ko-defeated': ko }]"
+    >
+      <span v-if="combo >= 2" class="combo-badge">x{{ combo }}</span>
+      <span v-if="guarded" class="guard-badge" title="Guarding"><pixel-icon name="shield" :size="10"></pixel-icon></span>
       <span class="identity-badge" :class="badgeClass">
         <span class="is-dark">{{ sideLabelLeft }}</span><span :class="sideLabelRightClass">{{ sideLabelRight }}</span>
       </span>
@@ -16,13 +23,24 @@ export default {
           :class="[imgClass, { 'is-dead': hp <= 0 }]"
           :src="player && player.avatar ? ('./img/players/' + player.avatar) : ''"
           :alt="player && player.name ? player.name : ''"
+          @error="onAvatarError"
           width="100"
           height="100"
         />
       </div>
-      <p class="player__name" :class="{ 'secret-text': isSecret }">{{ player && player.name }}</p>
+      <p class="player__name" :class="{ 'secret-text': isSecret }">
+        <pixel-icon v-if="player && player.isChampion" name="crown" :size="10"></pixel-icon> {{ player && player.name }}
+      </p>
       <div class="hp-text">{{ hp }} / 100</div>
-      <progress class="nes-progress" :class="[progressTheme, healthBarColorStatus(hp)]" :value="hp" max="100"></progress>
+      <progress class="nes-progress" :class="healthBarColorStatus(hp)" :value="hp" max="100"></progress>
+      <div
+        class="super-meter"
+        :class="{ 'is-full': meter >= 100 }"
+        :title="meter >= 100 ? 'Special ready!' : 'Special charging'"
+        aria-hidden="true"
+      >
+        <div class="super-meter-fill" :style="{ width: meter + '%' }"></div>
+      </div>
     </div>
   `,
   props: {
@@ -31,9 +49,12 @@ export default {
     hp: { type: Number, default: 100 },
     fx: { type: Array, default: () => [] },
     activeTurn: { type: Boolean, default: false },
-    progressTheme: { type: String, default: 'is-primary' },
     imgClass: { type: String, default: '' },
     isSecret: { type: Boolean, default: false },
+    combo: { type: Number, default: 0 },
+    ko: { type: Boolean, default: false },
+    meter: { type: Number, default: 0 },
+    guarded: { type: Boolean, default: false },
   },
   computed: {
     sideLabelLeft() {
@@ -46,13 +67,14 @@ export default {
       return this.side === 'p1' ? 'is-primary' : 'is-error';
     },
     badgeClass() {
-      return this.side === 'p1' ? 'badge-p1 nes-badge is-splited' : 'badge-p2 nes-badge is-splited';
+      return this.side === 'p1' ? 'badge-p1' : 'badge-p2';
     },
   },
   methods: {
+    onAvatarError,
     healthBarColorStatus(value) {
       return {
-        'is-primary': value > 50,
+        'is-success': value > 50,
         'is-warning': value > 20 && value <= 50,
         'is-error': value <= 20,
       };

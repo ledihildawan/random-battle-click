@@ -1,7 +1,5 @@
 /* --- EFFECTS / ANIMATIONS / CONFETTI / SNOW --- */
-.shake-screen {
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
+.shake-screen,
 .shake {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -71,7 +69,7 @@
   transform: translate(-50%, -50px);
 }
 
-/* Confetti container */
+/* Confetti container — atmosphere layer, behind all interfaces (same as snow) */
 #confetti-container {
   position: fixed;
   top: 0;
@@ -79,7 +77,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 999;
+  z-index: -1;
   overflow: hidden;
 }
 .confetti {
@@ -99,10 +97,10 @@
 }
 @keyframes confetti-sway {
   0% {
-    margin-left: -20px;
+    translate: -20px 0;
   }
   100% {
-    margin-left: 20px;
+    translate: 20px 0;
   }
 }
 
@@ -118,9 +116,13 @@
   overflow: hidden;
   background-color: transparent;
 }
+/* Victory: snow yields to the confetti celebration */
+#snow-container.is-hidden {
+  display: none;
+}
 .snow-pixel {
   position: absolute;
-  background-color: var(--panel-bg);
+  background-color: var(--white);
   top: -10px;
   animation: fall linear infinite, sway ease-in-out infinite;
   opacity: 0.8;
@@ -136,9 +138,166 @@
 @keyframes sway {
   0%,
   100% {
-    margin-left: 0;
+    translate: 0 0;
   }
   50% {
-    margin-left: 20px;
+    translate: 20px 0;
+  }
+}
+
+/* Rain (defeat atmosphere) */
+.rain-drop {
+  position: absolute;
+  top: -20px;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 0.55));
+  animation: rain-fall linear infinite;
+}
+@keyframes rain-fall {
+  0% {
+    transform: translate3d(0, -20px, 0);
+  }
+  100% {
+    transform: translate3d(-40px, 110vh, 0);
+  }
+}
+
+/* Fog (surrender atmosphere) */
+.fog-layer {
+  position: absolute;
+  left: -60%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(200, 205, 220, 0.5), transparent 70%);
+  filter: blur(6px);
+  animation: fog-drift linear infinite;
+}
+@keyframes fog-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(220vw);
+  }
+}
+
+/* Per-character special attack FX layer */
+#specialfx-container {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sfx-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  animation: sfx-flash 0.45s ease-out forwards;
+}
+@keyframes sfx-flash {
+  to {
+    opacity: 0;
+  }
+}
+.sfx-particle {
+  position: absolute;
+  will-change: transform, opacity;
+}
+.sfx-ring {
+  background: transparent;
+  border: 3px solid;
+}
+.sfx-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 480px;
+  height: 480px;
+  margin: -240px 0 0 -240px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(247, 213, 29, 0.28) 0deg 10deg, transparent 10deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, black 20%, transparent 70%);
+  mask-image: radial-gradient(circle, black 20%, transparent 70%);
+  animation: sfx-rays-spin 0.9s linear forwards;
+}
+@keyframes sfx-rays-spin {
+  to {
+    transform: rotate(120deg);
+    opacity: 0;
+  }
+}
+@keyframes sfx-move {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+@keyframes sfx-flicker {
+  0%,
+  40%,
+  80% {
+    opacity: 1;
+  }
+  20%,
+  60% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* CRT glitch burst (secret code reveal) */
+.glitch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 940;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(123, 224, 255, 0.15) 0 4px, transparent 4px 12px),
+    repeating-linear-gradient(90deg, rgba(231, 110, 85, 0.12) 0 6px, transparent 6px 18px);
+  mix-blend-mode: screen;
+  animation: glitch-jitter 0.45s steps(3) both;
+}
+@keyframes glitch-jitter {
+  0% {
+    transform: translate(0);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-14px, 6px);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(10px, -8px);
+  }
+  60% {
+    transform: translate(-6px, -4px);
+  }
+  80% {
+    transform: translate(8px, 6px);
+  }
+  100% {
+    transform: translate(0);
+    opacity: 0;
+  }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  #snow-container,
+  #confetti-container {
+    display: none;
   }
 }

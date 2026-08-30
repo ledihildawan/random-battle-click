@@ -13,13 +13,6 @@
   transform: scale(1.1);
 }
 
-/* Small responsive tweaks */
-@media (max-width: 520px) {
-  .main-title {
-    font-size: 18px;
-  }
-}
-
 .fade-in {
   animation: fadeIn 0.5s;
 }
@@ -36,3 +29,13 @@
 }
 
 /* Add small project-specific overrides below */
+
+/* Generic fade transition (used by cheat toast & splash loader swap) */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}

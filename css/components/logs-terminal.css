@@ -1,6 +1,6 @@
 /* Component: LogsTerminal */
 .logs-container {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 .logs-terminal {
   background-color: var(--bg-color) !important;
@@ -9,9 +9,26 @@
   height: 180px;
   overflow-y: auto;
   font-size: 11px;
-  padding: 15px;
+  padding: 16px;
   line-height: 1.8;
   box-shadow: 8px 8px 0 var(--shadow);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--terminal-green) var(--bg-color);
+}
+/* Subtle CRT scanlines */
+.logs-terminal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+}
+/* Each new line slides in like it's being typed */
+.logs-terminal p {
+  margin: 0;
+  overflow-wrap: break-word;
+  animation: log-in 0.25s ease-out;
 }
 .logs-terminal::-webkit-scrollbar {
   width: 10px;
@@ -21,4 +38,75 @@
 }
 .logs-terminal::-webkit-scrollbar-thumb {
   background: var(--terminal-green);
+}
+
+/* Blinking terminal cursor */
+.log-cursor-line {
+  color: var(--terminal-green);
+}
+.log-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  background: currentColor;
+  vertical-align: text-bottom;
+  animation: log-blink 1s steps(1) infinite;
+}
+.log-empty {
+  color: var(--muted);
+}
+@keyframes log-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+@keyframes log-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .logs-terminal {
+    height: 140px;
+  }
+}
+
+/* Log severity classes (set from battleEngine, no inline styles) */
+.logs-terminal .log-victory {
+  color: var(--accent);
+  font-weight: bold;
+}
+.logs-terminal .log-defeat {
+  color: var(--danger);
+  font-weight: bold;
+}
+.logs-terminal .log-special {
+  color: var(--warning);
+}
+.logs-terminal .log-crit {
+  color: var(--danger);
+}
+.logs-terminal .log-heal {
+  color: var(--success);
+}
+.logs-terminal .log-enemy {
+  color: var(--danger);
+}
+.logs-terminal .log-surrender {
+  color: var(--muted-high);
+  border-left: 3px solid var(--danger);
+  padding-left: 8px;
+}
+/* Round divider */
+.logs-terminal .log-round {
+  text-align: center;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  padding: 4px 0;
+  margin: 6px 0 2px;
 }

@@ -1,9 +1,22 @@
 /* --- BASE / LAYOUT --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body {
   overflow-x: hidden;
   height: 100%;
   width: 100%;
+}
+
+/* Reserve the scrollbar track: content height changes (long log lines) must
+   never toggle the browser scrollbar and reflow the whole page horizontally */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -21,17 +34,18 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-}
+  min-height: 100svh;
 
-/* NO SELECT EXPERIENCE (APP FEEL) */
-* {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
+/* NO SELECT EXPERIENCE (APP FEEL) — re-enable where text matters */
 .logs-terminal p {
   user-select: text;
+  -webkit-user-select: text;
 }
 
 [v-cloak] {
@@ -43,6 +57,11 @@ body {
   width: 95%;
   margin: 0 auto;
   position: relative;
-  transition: transform 0.1s;
+  transition: transform 0.1s, max-width 0.3s ease;
   padding: 20px 0;
+}
+
+/* Battle screen uses a wider stage; menus keep the compact width */
+.container--battle {
+  max-width: 1080px;
 }

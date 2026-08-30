@@ -4,9 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Retro Battle: Console Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <meta name="description" content="Retro arcade turn-based battler — pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs." />
+    <meta name="theme-color" content="#212529" />
+    <meta property="og:title" content="Retro Battle: Console Edition" />
+    <meta property="og:description" content="Pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs." />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='crispEdges'><rect width='24' height='24' fill='%23212529'/><path fill='%23f7d51d' d='M16 17H13V19H15V21H9V19H11V17H8V15H16V17ZM18 5H22V11H20V7H18V11H20V13H18V15H16V5H8V15H6V13H4V11H6V7H4V11H2V5H6V3H18V5Z'/></svg>"
+    />
 
     <link rel="stylesheet" href="./css/main.css" />
   </head>
@@ -17,38 +23,63 @@
       </transition>
 
       <div id="confetti-container"></div>
-      <div id="snow-container"></div>
+      <div id="specialfx-container"></div>
+      <div id="snow-container" :class="{ 'is-hidden': status.winner }"></div>
 
       <transition name="fade">
-        <div v-if="cheatActivated" class="cheat-toast">🔓 God mode activated!</div>
+        <div v-if="cheatActivated" class="cheat-toast"><pixel-icon name="unlock" :size="12"></pixel-icon> God mode activated!</div>
       </transition>
 
-      <div class="container" :class="{ 'shake-screen': globalShake }" v-show="!showSplash">
-        <h1 class="main-title">
-          <span class="line1">RETRO</span>
-          <span class="line2">BATTLE</span>
-        </h1>
+      <div
+        class="container"
+        :class="{ 'shake-screen': globalShake, 'container--battle': status.play || status.winner }"
+        v-show="!showSplash"
+      >
+        <brand-logo v-if="!showSplash && !status.loading && !status.winner"></brand-logo>
 
-        <h1 class="splash-logo">
-          <span class="line1">RETRO</span>
-          <span class="line2">BATTLE</span>
-        </h1>
-
-        <title-screen v-if="isTitleScreen" @start="goToSelectScreen"></title-screen>
+        <title-screen
+          v-if="isTitleScreen"
+          :wins="stats.win.player1"
+          :losses="stats.win.player2"
+          :streak="stats.streak"
+          :best-streak="stats.bestStreak"
+          @start="goToSelectScreen"
+        ></title-screen>
 
         <select-screen
           v-if="status.selecting"
           :players="players"
           :temp-selection="tempSelection"
           :focused-index="focusedCharIndex"
+          :fighter-stats="fighterStats"
+          :confirm-id="selectConfirm"
+          :rounds="roundsPerMatch"
+          @cycle-rounds="cycleRounds"
           @select="clickSelectPlayer"
+          @hover-index="focusedCharIndex = $event"
+          @reset-focus="resetCharFocus"
           @confirm="confirmSelection"
           @back="backToTitle"
         ></select-screen>
 
-        <loading-screen v-if="status.loading" :progress="loadingProgress"></loading-screen>
+        <transition name="fade">
+          <splash-screen v-if="status.loading" :progress="loadingProgress"></splash-screen>
+        </transition>
 
-        <div v-if="status.play || status.winner" class="screen-battle fade-in">
+        <div v-if="cheatGlitch" class="glitch-overlay" aria-hidden="true"></div>
+
+      <div v-if="koActive" class="ko-overlay" aria-hidden="true"><span class="ko-text">K.O.</span></div>
+
+      <div v-if="battleIntro" class="battle-cinema" aria-hidden="true">
+          <div class="intro-letterbox intro-letterbox--top"></div>
+          <div class="intro-letterbox intro-letterbox--bottom"></div>
+          <div class="intro-fight">{{ battleIntroText }}</div>
+        </div>
+
+        <div v-if="status.play || koActive" class="screen-battle" :class="{ 'is-intro': battleAssembling }">
+          <div v-if="turnBanner" :key="turnBanner.key" class="turn-banner" :class="'is-' + turnBanner.side">
+            {{ turnBanner.label }}
+          </div>
           <div class="players">
             <player-card
               side="p1"
@@ -56,12 +87,32 @@
               :hp="health.player1"
               :fx="activeFx.player1"
               :active-turn="status.play && !turnInProgress && !status.winner"
-              progress-theme="is-primary"
               img-class="player-1-img"
+              :combo="combo.player1"
+              :meter="specialMeter.player1"
+              :guarded="guard.player1"
+              :ko="koLoser === 'p1'"
               :is-secret="selectedPlayer.player1 && selectedPlayer.player1.isSecret"
             ></player-card>
 
-            <div class="vs-badge">VS</div>
+            <div class="vs-column">
+              <div class="vs-badge">VS</div>
+              <div v-if="roundsPerMatch > 1" class="round-tracker" aria-label="Round score">
+                <span
+                  v-for="n in winsNeeded"
+                  :key="'pip-p1-' + n"
+                  class="round-pip is-p1"
+                  :class="{ 'is-won': n <= roundWins.player1, 'is-matchpoint': n === winsNeeded && roundWins.player1 === winsNeeded - 1 }"
+                ></span>
+                <span class="round-tracker-sep"></span>
+                <span
+                  v-for="n in winsNeeded"
+                  :key="'pip-p2-' + n"
+                  class="round-pip is-cpu"
+                  :class="{ 'is-won': n <= roundWins.player2, 'is-matchpoint': n === winsNeeded && roundWins.player2 === winsNeeded - 1 }"
+                ></span>
+              </div>
+            </div>
 
             <player-card
               side="cpu"
@@ -69,26 +120,28 @@
               :hp="health.player2"
               :fx="activeFx.player2"
               :active-turn="status.play && turnInProgress && !status.winner"
-              progress-theme="is-error"
               img-class="player-2-img"
+              :combo="combo.player2"
+              :meter="specialMeter.player2"
+              :guarded="guard.player2"
+              :ko="koLoser === 'p2'"
             ></player-card>
           </div>
 
           <div class="nes-container with-title is-centered control-panel">
             <p class="title">Command Center</p>
             <command-center
-              :winner="status.winner"
-              :turn-in-progress="turnInProgress"
+              :turn-in-progress="turnInProgress || battleIntro || koActive"
               :battle-menu-index="battleMenuIndex"
               :health="health"
               :limit="limit"
               :tracker="tracker"
+              :special-meter="specialMeter.player1"
+              :special-pity="specialPity.player1"
               @attack-normal="playerAttack('normal')"
               @attack-special="playerAttack('special')"
               @heal="playerHeal"
-              @new="goToSelectScreen"
-              @rematch="reBattle"
-              @exit="backToTitle"
+              @defend="playerDefend"
               @hover-index="battleMenuIndex = $event"
             ></command-center>
           </div>
@@ -100,16 +153,44 @@
             </div>
           </div>
         </div>
+
+        <transition name="fade">
+          <winner-screen
+            v-if="status.winner && !koActive"
+            :victory="isVictory"
+            :surrendered="isSurrender"
+            :surrender-hp="surrenderHp"
+            :surrender-enemy-hp="surrenderEnemyHp"
+            :fighter="selectedPlayer.player1"
+            :opponent="selectedPlayer.player2.name"
+            :hp-left="health.player1"
+            :rounds="roundCount"
+            :max-combo="battleMaxCombo"
+            :streak="stats.streak"
+            :round-score="roundsPerMatch > 1 ? roundWins.player1 + '-' + roundWins.player2 : ''"
+            :wins="stats.win.player1"
+            :losses="stats.win.player2"
+            :index="battleMenuIndex"
+            @new="goToSelectScreen"
+            @rematch="reBattle"
+            @exit="backToTitle"
+            @hover-index="battleMenuIndex = $event"
+          ></winner-screen>
+        </transition>
       </div>
 
       <give-up-dialog :open="isDialogOpen" @cancel="hideDialogGiveUp" @confirm="giveUp"></give-up-dialog>
-      <div class="give-up-dialog-backdrop" v-if="status.giveUp || isDialogOpen"></div>
+      <div class="give-up-dialog-backdrop" v-if="isDialogOpen" @click="hideDialogGiveUp"></div>
     </div>
 
-    <!-- Libraries and Services (components loaded via module) -->
+    <noscript>
+      <div style="font-family: monospace; color: #ffffff; background: #212529; padding: 24px; text-align: center;">
+        JavaScript is required to play Retro Battle.
+      </div>
+    </noscript>
+
+    <!-- Libraries (services & components are loaded via module) -->
     <script src="./js/vue.js"></script>
-    <script src="./js/services/uiEffects.js"></script>
-    <script src="./js/services/battleEngine.js"></script>
     <script type="module" src="./js/script.js"></script>
   </body>
 </html>

@@ -3,36 +3,58 @@
   background: var(--panel-bg);
   color: var(--panel-text);
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
 }
 .actions {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: center;
+  align-items: stretch;
 }
+/* Deterministic 3-column grid: never wraps unexpectedly, winner menu aligns with combat menu */
 .combat-buttons {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  /* keep panel height stable when swapping combat <-> winner menus */
+  min-height: 72px;
+}
+.combat-buttons .nes-btn {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
 }
 .actions__btn {
-  width: 150px;
   font-size: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px;
-  transition: all 0.1s;
+  padding: 10px 8px;
+}
+
+@media (max-width: 700px) {
+  .actions__btn {
+    font-size: 10px;
+  }
+  .actions__btn .btn-subtext {
+    font-size: 7px;
+  }
+}
+@media (max-width: 600px) {
+  .combat-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 0;
+  }
 }
 .actions__btn.focused,
 .nes-btn.focused {
   border: 4px solid var(--warning);
   transform: translateY(-4px);
-  box-shadow: 0 4px 0 var(--shadow);
+  /* accent ring — border-color alone is invisible under NES border-image */
+  box-shadow: 0 4px 0 var(--shadow), 0 0 0 3px var(--accent);
   position: relative;
   z-index: 10;
 }
@@ -40,4 +62,8 @@
   opacity: 0.5;
   filter: grayscale(100%);
   pointer-events: none;
+  cursor: not-allowed;
+}
+button:disabled {
+  cursor: not-allowed;
 }
