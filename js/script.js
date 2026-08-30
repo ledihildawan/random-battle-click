@@ -143,7 +143,7 @@ const app = new Vue({
       surrenderHp: 0,
       surrenderEnemyHp: 0,
       roundCount: 0,
-      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0 },
+      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 } },
       battleMaxCombo: 0,
       battleSummary: { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 },
       roundsPerMatch: 1,
@@ -151,6 +151,9 @@ const app = new Vue({
       arcade: { active: false, stage: 0, totalStages: 5, ladder: [], hpCarry: 100 },
       arcadeStageClear: false,
       arcadeSelecting: false,
+      arcadeScore: 0,
+      arcadeContinue: false,
+      arcadeContinueCount: 9,
       roundWins: { player1: 0, player2: 0 },
       currentRound: 1,
       roundIntro: false,
@@ -192,7 +195,6 @@ const app = new Vue({
         return;
       }
       Sound.stopBattleMusic();
-      // K.O. beat before the winner screen (white flag surrender skips it)
       if (this.isSurrender) return;
       this.koActive = true;
       this.koLoser = this.isVictory ? 'p2' : 'p1';
@@ -201,6 +203,12 @@ const app = new Vue({
       this._koTimer = setTimeout(() => {
         this.koActive = false;
         this.koLoser = null;
+        // Arcade loss: offer continue instead of the winner screen
+        if (this.arcade.active && !this.isVictory) {
+          this.arcadeContinue = true;
+          this.arcadeContinueCount = 9;
+          this.startContinueCountdown();
+        }
       }, 1400);
     },
     roundIntro(val) {
@@ -314,7 +322,65 @@ const app = new Vue({
     advanceArcadeStage() {
       this.arcade.stage += 1;
       this.arcade.hpCarry = Math.min(100, this.arcade.hpCarry + 25);
+      this.addStageScore();
       this.startArcadeStage();
+    },
+    startArcadeStage() {
+      const opponent = this.arcade.ladder[this.arcade.stage];
+      if (!opponent) {
+        this.finishArcade(true);
+        return;
+      }
+      Sound.play('fight');
+      this.status.winner = false;
+      this.startLoading();
+    },
+    addStageScore() {
+      const s = this.battleSummary;
+      let score = s.damageDealt;
+      score += this.roundWins.player1 * 50;
+      if (this.roundWins.player2 === 0) score += 300;
+      score += 200;
+      if (this.arcade.stage === this.arcade.totalStages - 1) score += 500;
+      this.arcadeScore += score;
+    },
+    finishArcade(cleared) {
+      this.arcade.active = false;
+      this.arcadeContinue = false;
+      clearInterval(this._continueTimer);
+      const stage = this.arcade.stage + 1;
+      const arcadeStats = this.stats.arcade || { highScore: 0, bestStage: 0, clears: 0 };
+      if (this.arcadeScore > arcadeStats.highScore) arcadeStats.highScore = this.arcadeScore;
+      if (stage > arcadeStats.bestStage) arcadeStats.bestStage = stage;
+      if (cleared) arcadeStats.clears += 1;
+      this.stats.arcade = arcadeStats;
+      this.saveStats();
+      this.arcadeScore = 0;
+      this.status.winner = true;
+      if (cleared) Sound.play('victory');
+    },
+    startContinueCountdown() {
+      clearInterval(this._continueTimer);
+      this._continueTimer = setInterval(() => {
+        this.arcadeContinueCount -= 1;
+        Sound.play('tick');
+        if (this.arcadeContinueCount <= 0) {
+          this.declineContinue();
+        }
+      }, 1000);
+    },
+    acceptContinue() {
+      clearInterval(this._continueTimer);
+      this.arcadeContinue = false;
+      this.arcadeScore = Math.max(0, this.arcadeScore - 500);
+      this.arcade.hpCarry = 100;
+      Sound.play('select');
+      this.startArcadeStage();
+    },
+    declineContinue() {
+      clearInterval(this._continueTimer);
+      this.arcadeContinue = false;
+      Sound.play('defeat');
     },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
@@ -391,6 +457,12 @@ const app = new Vue({
           Sound.play('dialogOpen');
           this.showDialogGiveUp();
         }
+      }
+
+      if (this.arcadeContinue) {
+        if (e.key === 'Enter') this.acceptContinue();
+        if (e.key === 'Escape') this.declineContinue();
+        return;
       }
 
       if (this.status.winner) {
@@ -601,8 +673,13 @@ const app = new Vue({
       this.roundIntro = false;
       this.battleAssembling = true;
       BattleEngine.startNewBattle(this, rematch);
-      if (this.arcade.active && this.arcade.hpCarry < 100) {
-        this.health.player1 = this.arcade.hpCarry;
+      if (this.arcade.active) {
+        if (this.arcade.hpCarry < 100) {
+          this.health.player1 = this.arcade.hpCarry;
+        }
+        if (this.arcade.stage === this.arcade.totalStages - 1) {
+          this.health.player2 = 150;
+        }
       }
       Sound.startBattleMusic();
       this.playBattleIntro();

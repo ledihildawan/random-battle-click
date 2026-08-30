@@ -415,11 +415,15 @@ function chooseEnemyAction(app) {
   const enemyCombo = app.combo.player2;
   const avgSpecial = (BALANCE.special.min + BALANCE.special.max) / 2;
   const diff = DIFFICULTY_PRESETS[app.difficulty] || DIFFICULTY_PRESETS.normal;
+  // Arcade rising difficulty: later stages make the AI more aggressive
+  const arcadeBoost = app.arcade && app.arcade.active
+    ? (app.arcade.stage >= 6 ? 1.5 : app.arcade.stage >= 3 ? 1.3 : 1.0)
+    : 1.0;
 
   // TIER 1 — READ: brace when the player's special is loaded
   if (diff.guardRead && playerReady && !playerGuarding) {
     const prob = enemyHp <= 25 ? 0.75 : enemyHp <= 50 ? 0.55 : 0;
-    if (prob && Math.random() < prob * diff.defendMult) return 'defend';
+    if (prob && Math.random() < prob * diff.defendMult * arcadeBoost) return 'defend';
   }
 
   // TIER 2 — SURVIVE: heal when critically low
@@ -427,7 +431,7 @@ function chooseEnemyAction(app) {
     const healProb = kitRisk >= 0.3
       ? (enemyHp <= 12 ? 0.7 : 0)
       : (enemyHp <= 18 ? 0.85 : enemyHp <= 35 ? 0.5 : 0);
-    if (healProb && Math.random() < healProb * diff.healMult) return 'heal';
+    if (healProb && Math.random() < healProb * diff.healMult * arcadeBoost) return 'heal';
   }
 
   // TIER 3 — FINISH: spend the full meter, but never into a guard
@@ -543,7 +547,13 @@ function startNewBattle(app, rematch = false) {
   UIEffects.clearWeather();
   app.battleMenuIndex = 0;
 
-  createLog(app, { text: 'A NEW CHALLENGER APPROACHES!', icon: 'zap' });
+  const isBossStage = app.arcade && app.arcade.active && app.arcade.stage === app.arcade.totalStages - 1;
+  if (isBossStage) {
+    createLog(app, { text: '⚡ THE FINAL CHALLENGER APPROACHES! ⚡', severity: 'log-victory', icon: 'trophy' });
+    app.specialMeter.player2 = BALANCE.special.meterMax;
+  } else {
+    createLog(app, { text: 'A NEW CHALLENGER APPROACHES!', icon: 'zap' });
+  }
   const opponentQuote = FIGHTER_QUOTES[app.selectedPlayer.player2.id];
   if (opponentQuote) {
     createLog(app, { text: `${app.selectedPlayer.player2.name}: "${opponentQuote}"`, icon: 'sparkles' });

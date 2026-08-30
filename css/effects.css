@@ -287,6 +287,62 @@
   }
 }
 
+/* Arcade score counter */
+.arcade-score {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-bg);
+  color: var(--warning);
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 3px solid var(--warning);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+/* Continue overlay */
+.continue-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+}
+.continue-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.continue-title {
+  margin: 0;
+  font-size: clamp(24px, 5vw, 40px);
+  color: var(--warning);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 var(--shadow);
+  animation: blink 1s steps(1) infinite;
+}
+.continue-count {
+  margin: 0;
+  font-size: clamp(48px, 10vw, 80px);
+  color: var(--text-color);
+  text-shadow: 4px 4px 0 var(--shadow);
+}
+.continue-hint {
+  margin: 0;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
 /* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

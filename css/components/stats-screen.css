@@ -43,6 +43,27 @@
   color: var(--danger);
 }
 
+/* Arcade records */
+.arcade-records {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px solid var(--warning);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.arcade-records-title {
+  margin: 0;
+  font-size: 8px;
+  color: var(--warning);
+  letter-spacing: 2px;
+}
+.arcade-records-row {
+  display: flex;
+  gap: 24px;
+}
+
 /* Nemesis card */
 .stats-nemesis {
   padding: 16px 20px;

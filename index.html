@@ -85,6 +85,18 @@
 
         <div v-if="cheatGlitch" class="glitch-overlay" aria-hidden="true"></div>
 
+      <div v-if="arcade.active && arcadeScore > 0" class="arcade-score" aria-label="Arcade score">
+        <pixel-icon name="star" :size="10"></pixel-icon> {{ arcadeScore }}
+      </div>
+
+      <div v-if="arcadeContinue" class="continue-overlay" role="dialog" aria-label="Continue">
+        <div class="continue-content">
+          <p class="continue-title">CONTINUE?</p>
+          <p class="continue-count">{{ arcadeContinueCount }}</p>
+          <p class="continue-hint">[ENTER] retry stage · -500 pts · [ESC] end run</p>
+        </div>
+      </div>
+
       <div v-if="koActive" class="ko-overlay" aria-hidden="true"><span class="ko-text">K.O.</span></div>
 
       <div v-if="battleIntro" class="battle-cinema" aria-hidden="true">
@@ -135,6 +147,7 @@
               side="cpu"
               :player="selectedPlayer.player2"
               :hp="health.player2"
+              :max-hp="arcade.active && arcade.stage === arcade.totalStages - 1 ? 150 : 100"
               :fx="activeFx.player2"
               :active-turn="status.play && turnInProgress && !status.winner"
               img-class="player-2-img"
@@ -173,7 +186,7 @@
 
         <transition name="fade">
           <winner-screen
-            v-if="status.winner && !koActive"
+            v-if="status.winner && !koActive && !arcadeContinue"
             :victory="isVictory"
             :surrendered="isSurrender"
             :surrender-hp="surrenderHp"

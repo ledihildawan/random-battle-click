@@ -34,6 +34,24 @@ export default {
             <span class="global-value">x{{ stats.maxCombo || 0 }}</span>
           </div>
         </div>
+
+        <div v-if="stats.arcade && stats.arcade.highScore > 0" class="arcade-records">
+          <p class="arcade-records-title">ARCADE RECORDS</p>
+          <div class="arcade-records-row">
+            <div class="global-stat">
+              <span class="global-label">High Score</span>
+              <span class="global-value is-success">{{ stats.arcade.highScore }}</span>
+            </div>
+            <div class="global-stat">
+              <span class="global-label">Best Stage</span>
+              <span class="global-value">{{ stats.arcade.bestStage }}/9</span>
+            </div>
+            <div class="global-stat">
+              <span class="global-label">Clears</span>
+              <span class="global-value">{{ stats.arcade.clears }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="nemesis" class="nes-container is-dark stats-nemesis">

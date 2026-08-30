@@ -33,8 +33,8 @@ export default {
       <p class="player__name" :class="{ 'secret-text': isSecret }">
         <pixel-icon v-if="player && player.isChampion" name="crown" :size="10"></pixel-icon> {{ player && player.name }}
       </p>
-      <div class="hp-text">{{ hp }} / 100</div>
-      <progress class="nes-progress" :class="healthBarColorStatus(hp)" :value="hp" max="100"></progress>
+      <div class="hp-text">{{ hp }} / {{ maxHp }}</div>
+      <progress class="nes-progress" :class="healthBarColorStatus(hp)" :value="hp" :max="maxHp"></progress>
       <div
         class="super-meter"
         :class="{ 'is-full': meter >= 100 }"
@@ -49,6 +49,7 @@ export default {
     side: { type: String, required: true },
     player: { type: Object, default: () => ({}) },
     hp: { type: Number, default: 100 },
+    maxHp: { type: Number, default: 100 },
     fx: { type: Array, default: () => [] },
     activeTurn: { type: Boolean, default: false },
     imgClass: { type: String, default: '' },
