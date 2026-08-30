@@ -1,15 +1,19 @@
 // Battle Engine Service (ES module)
 import UIEffects, { SPECIAL_FX } from './uiEffects.js';
 import Sound from './soundEngine.js';
+import deepFreeze from '../utils/deepFreeze.js';
 
-// Single source of truth for combat rules — both sides obey the exact same numbers.
-export const BALANCE = {
+/**
+ * Combat rules — the single source of truth both sides obey.
+ * Frozen at module load: mutation attempts fail silently in strict mode.
+ */
+export const BALANCE = deepFreeze({
   lifesteal: 0.25,
   attack: { min: 6, max: 10, critChance: 0.15, critMult: 2, missChance: 0.07 },
   special: { min: 12, max: 20, missChance: 0.25, meterMax: 100, meterGainHit: 30, meterGainTaken: 20, meterGainWhiff: 10 },
   heal: { min: 12, max: 20, charges: 3, failChances: [0.05, 0.15, 0.3] },
   defend: { reduction: 0.5, meterGain: 25 },
-};
+});
 
 const calcDamage = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const other = (side) => (side === 'player1' ? 'player2' : 'player1');
@@ -519,6 +523,12 @@ function reBattle(app) {
   if (typeof app.startLoading === 'function') app.startLoading(true);
 }
 
+/**
+ * Battle engine — deterministic combat resolution over the shared reactive app state.
+ * Public API: { startNewBattle, beginNextRound, playerAttack, playerHeal,
+ * playerDefend, enemyTurn, checkWinner, executeBattleAction, reBattle, surrender,
+ * cancelTurn }.
+ */
 export default {
   startNewBattle,
   beginNextRound,

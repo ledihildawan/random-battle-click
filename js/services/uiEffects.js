@@ -1,11 +1,16 @@
 // UI Effects Service (ES module)
+import deepFreeze from '../utils/deepFreeze.js';
+
 const prefersReducedMotion =
   typeof window !== 'undefined' &&
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Per-character signature special attacks (id -> fx type, theme color, move name)
-export const SPECIAL_FX = {
+/**
+ * Per-character signature special attacks, keyed by fighter id.
+ * Frozen at module load. `move` doubles as the log-facing move name.
+ */
+export const SPECIAL_FX = deepFreeze({
   1: { type: 'slash', color: '#209cee', move: 'BLADE WALTZ' },
   2: { type: 'coins', color: '#f7d51d', move: 'GOLD RUSH' },
   3: { type: 'flame', color: '#e76e55', move: 'PHOENIX INFERNO' },
@@ -17,7 +22,7 @@ export const SPECIAL_FX = {
   9: { type: 'ice', color: '#7be0ff', move: 'GLACIER EDGE' },
   10: { type: 'quake', color: '#b9b9c2', move: 'AFTERSHOCK' },
   999: { type: 'godrays', color: '#f7d51d', move: 'DIVINE JUDGMENT' },
-};
+});
 
 const randRange = (a, b) => Math.random() * (b - a) + a;
 
