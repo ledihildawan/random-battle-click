@@ -354,6 +354,15 @@ function resolveAction(app, { side, action }) {
   applyDamage(app, { side, dmg, type: 'attack', isCrit });
 }
 
+/**
+ * CPU decision engine — follows the same strategic flowchart the player should.
+ * Reads only public state (HP, meter, combo, guard, charges) — zero information asymmetry.
+ *
+ * Tier 1 READ:    Player special charged → defend (swings the math by ~16 HP)
+ * Tier 2 SURVIVE: HP critical → heal (medkit risk-aware)
+ * Tier 3 FINISH:  Meter full + player not guarding → special (lethal / combo / tempo)
+ * Tier 4 DEFAULT: Attack — builds meter, maintains combo, lifesteals
+ */
 function chooseEnemyAction(app) {
   const enemyHp = app.health.player2;
   const playerHp = app.health.player1;
@@ -362,15 +371,18 @@ function chooseEnemyAction(app) {
   const kitRisk = BALANCE.heal.failChances[usedKits];
   const ready = specialReady(app, 'player2');
   const playerReady = specialReady(app, 'player1');
+  const playerGuarding = app.guard.player1;
+  const enemyCombo = app.combo.player2;
   const avgSpecial = (BALANCE.special.min + BALANCE.special.max) / 2;
 
-  // Finisher: close out the fight when player is in lethal range
-  if (ready && playerHp > 0 && playerHp <= avgSpecial && Math.random() < 0.9) return 'special';
-  // Read the player: brace when their special is loaded and CPU is exposed
-  if (!app.guard.player2 && playerReady && enemyHp <= 50 && Math.random() < 0.45) return 'defend';
-  // Desperate block near death
-  if (!app.guard.player2 && enemyHp <= 15 && Math.random() < 0.25) return 'defend';
-  // Survival: heal when critically low — but the risky last medkit needs true desperation
+  // TIER 1 — READ: brace when the player's special is loaded and CPU is exposed.
+  // Defending a charged special changes the outcome from -5.3 to +11.0 HP swing.
+  if (playerReady && !playerGuarding) {
+    if (enemyHp <= 25 && Math.random() < 0.75) return 'defend';
+    if (enemyHp <= 50 && Math.random() < 0.55) return 'defend';
+  }
+
+  // TIER 2 — SURVIVE: heal when critically low, but respect escalating medkit risk.
   if (canHeal) {
     if (kitRisk >= 0.3) {
       if (enemyHp <= 12 && Math.random() < 0.7) return 'heal';
@@ -379,8 +391,16 @@ function chooseEnemyAction(app) {
       if (enemyHp <= 35 && Math.random() < 0.5) return 'heal';
     }
   }
-  // Tempo: mixed offence, obeying the same meter rules as the player
-  if (ready && Math.random() < 0.4) return 'special';
+
+  // TIER 3 — FINISH: spend the full meter, but never into a guard.
+  // A guarded special (16 × 0.5 = 8) is equivalent to a free attack — meter wasted.
+  if (ready && !playerGuarding) {
+    if (playerHp > 0 && playerHp <= avgSpecial && Math.random() < 0.9) return 'special';
+    if (enemyCombo >= 3 && Math.random() < 0.7) return 'special';
+    if (Math.random() < 0.35) return 'special';
+  }
+
+  // TIER 4 — DEFAULT: attack builds meter (+30), sustains via lifesteal (+25% dmg), keeps combo.
   return 'attack';
 }
 
