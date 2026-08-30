@@ -224,6 +224,19 @@
   color: var(--accent);
 }
 
+/* Contextual battle tip */
+.battle-tip {
+  margin: 0;
+  font-size: 8px;
+  color: var(--muted-high);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 8px 12px;
+  background: var(--bg-12);
+  border: 2px solid var(--border);
+  max-width: 360px;
+}
+
 /* Surrender archetype tag */
 .winner-tag {
   margin: 0;

@@ -1,4 +1,6 @@
 // Sound Engine — procedural chiptune (Web Audio API, zero audio assets)
+import deepFreeze from '../utils/deepFreeze.js';
+
 const STORAGE_KEY = 'rbc-muted';
 const MASTER_GAIN = 0.22;
 
@@ -194,11 +196,45 @@ const createSoundEngine = () => {
     window.addEventListener('keydown', unlock);
   }
 
+  // --- Battle music: procedural chiptune loop ---
+  let musicTimer = null;
+  let musicStep = 0;
+
+  const BASS_PATTERN = deepFreeze([110, 110, 0, 110, 87, 87, 0, 87, 98, 98, 0, 98, 82, 82, 0, 82]);
+  const MELODY_PATTERN = deepFreeze([440, 0, 523, 0, 440, 0, 392, 0, 349, 0, 440, 0, 392, 0, 330, 0]);
+
+  function playMusicStep() {
+    if (!ensure()) return;
+    const bass = BASS_PATTERN[musicStep % BASS_PATTERN.length];
+    const melody = MELODY_PATTERN[musicStep % MELODY_PATTERN.length];
+    if (bass) tone({ freq: bass, dur: 0.12, vol: 0.12, type: 'square' });
+    if (melody) tone({ freq: melody, dur: 0.08, vol: 0.08, type: 'triangle', delay: 0.06 });
+    if (musicStep % 4 === 0) noise({ dur: 0.03, vol: 0.06, from: 8000, to: 4000 });
+    musicStep += 1;
+  }
+
+  function startBattleMusic() {
+    stopBattleMusic();
+    if (muted) return;
+    musicStep = 0;
+    playMusicStep();
+    musicTimer = setInterval(playMusicStep, 150);
+  }
+
+  function stopBattleMusic() {
+    if (musicTimer) {
+      clearInterval(musicTimer);
+      musicTimer = null;
+    }
+  }
+
   autoUnlock();
 
   return Object.freeze({
     play,
     toggleMute,
+    startBattleMusic,
+    stopBattleMusic,
     get muted() {
       return muted;
     },

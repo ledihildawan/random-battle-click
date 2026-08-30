@@ -151,8 +151,8 @@
   position: absolute;
   inset: 0;
   background: var(--white);
-  opacity: 0.5;
-  animation: ko-flash 0.5s ease-out forwards;
+  opacity: 0;
+  animation: ko-flash 0.15s ease-out 0.1s, ko-flash 0.1s ease-out 0.3s;
 }
 .ko-text {
   position: relative;
@@ -161,18 +161,29 @@
   letter-spacing: 4px;
   text-shadow: 4px 4px 0 var(--shadow), 8px 8px 0 rgba(0, 0, 0, 0.35);
   transform: rotate(-6deg);
-  animation: ko-punch 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ko-hitstop 0.15s steps(1) both, ko-punch 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+@keyframes ko-hitstop {
+  0% {
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.8);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.8);
+  }
 }
 @keyframes ko-punch {
   0% {
-    transform: rotate(-6deg) scale(3);
     opacity: 0;
+    transform: rotate(-6deg) scale(3);
   }
   60% {
-    transform: rotate(-6deg) scale(0.95);
     opacity: 1;
+    transform: rotate(-6deg) scale(0.95);
   }
   100% {
+    opacity: 1;
     transform: rotate(-6deg) scale(1);
   }
 }

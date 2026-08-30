@@ -71,6 +71,12 @@ function checkWinner(app) {
         severity: 'log-victory',
         icon: 'trophy',
       });
+      if (app.arcade && app.arcade.active) {
+        app.arcade.hpCarry = app.health.player1;
+        if (typeof app.advanceArcadeStage === 'function') {
+          setTimeout(() => app.advanceArcadeStage(), 2500);
+        }
+      }
       gameOver(app);
       return true;
     }
@@ -375,6 +381,26 @@ function resolveAction(app, { side, action }) {
  * Tier 3 FINISH:  Meter full + player not guarding → special (lethal / combo / tempo)
  * Tier 4 DEFAULT: Attack — builds meter, maintains combo, lifesteals
  */
+const FIGHTER_QUOTES = deepFreeze({
+  1: "Let's settle this properly.",
+  2: "I've got gold to earn.",
+  3: 'Rise and burn.',
+  4: "Don't break my heart.",
+  5: 'Court is in session.',
+  6: "Careful, it's toxic.",
+  7: 'Can you catch the wind?',
+  8: 'Make a wish.',
+  9: 'Ice to meet you.',
+  10: 'Brace for impact.',
+  999: 'I already won.',
+});
+
+const DIFFICULTY_PRESETS = deepFreeze({
+  easy: { defendMult: 0.4, healMult: 0.6, finisherMult: 0.6, comboRead: false, guardRead: false },
+  normal: { defendMult: 1.0, healMult: 1.0, finisherMult: 1.0, comboRead: true, guardRead: true },
+  hard: { defendMult: 1.3, healMult: 1.2, finisherMult: 1.0, comboRead: true, guardRead: true, bankMeter: true },
+});
+
 function chooseEnemyAction(app) {
   const enemyHp = app.health.player2;
   const playerHp = app.health.player1;
@@ -386,33 +412,29 @@ function chooseEnemyAction(app) {
   const playerGuarding = app.guard.player1;
   const enemyCombo = app.combo.player2;
   const avgSpecial = (BALANCE.special.min + BALANCE.special.max) / 2;
+  const diff = DIFFICULTY_PRESETS[app.difficulty] || DIFFICULTY_PRESETS.normal;
 
-  // TIER 1 — READ: brace when the player's special is loaded and CPU is exposed.
-  // Defending a charged special changes the outcome from -5.3 to +11.0 HP swing.
-  if (playerReady && !playerGuarding) {
-    if (enemyHp <= 25 && Math.random() < 0.75) return 'defend';
-    if (enemyHp <= 50 && Math.random() < 0.55) return 'defend';
+  // TIER 1 — READ: brace when the player's special is loaded
+  if (diff.guardRead && playerReady && !playerGuarding) {
+    const prob = enemyHp <= 25 ? 0.75 : enemyHp <= 50 ? 0.55 : 0;
+    if (prob && Math.random() < prob * diff.defendMult) return 'defend';
   }
 
-  // TIER 2 — SURVIVE: heal when critically low, but respect escalating medkit risk.
+  // TIER 2 — SURVIVE: heal when critically low
   if (canHeal) {
-    if (kitRisk >= 0.3) {
-      if (enemyHp <= 12 && Math.random() < 0.7) return 'heal';
-    } else {
-      if (enemyHp <= 18 && Math.random() < 0.85) return 'heal';
-      if (enemyHp <= 35 && Math.random() < 0.5) return 'heal';
-    }
+    const healProb = kitRisk >= 0.3
+      ? (enemyHp <= 12 ? 0.7 : 0)
+      : (enemyHp <= 18 ? 0.85 : enemyHp <= 35 ? 0.5 : 0);
+    if (healProb && Math.random() < healProb * diff.healMult) return 'heal';
   }
 
-  // TIER 3 — FINISH: spend the full meter, but never into a guard.
-  // A guarded special (16 × 0.5 = 8) is equivalent to a free attack — meter wasted.
-  if (ready && !playerGuarding) {
-    if (playerHp > 0 && playerHp <= avgSpecial && Math.random() < 0.9) return 'special';
-    if (enemyCombo >= 3 && Math.random() < 0.7) return 'special';
+  // TIER 3 — FINISH: spend the full meter, but never into a guard
+  if (ready && (!diff.guardRead || !playerGuarding)) {
+    if (playerHp > 0 && playerHp <= avgSpecial && Math.random() < 0.9 * diff.finisherMult) return 'special';
+    if (diff.comboRead && enemyCombo >= 3 && Math.random() < 0.7) return 'special';
     if (Math.random() < 0.35) return 'special';
   }
 
-  // TIER 4 — DEFAULT: attack builds meter (+30), sustains via lifesteal (+25% dmg), keeps combo.
   return 'attack';
 }
 
@@ -479,6 +501,9 @@ function surrender(app) {
 }
 
 function pickOpponent(app) {
+  if (app.arcade && app.arcade.active) {
+    return app.arcade.ladder[app.arcade.stage] || pickOpponent(app);
+  }
   const pool = app.players.filter((candidate) => candidate.id !== app.selectedPlayer.player1.id && !candidate.isSecret);
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -517,6 +542,13 @@ function startNewBattle(app, rematch = false) {
   app.battleMenuIndex = 0;
 
   createLog(app, { text: 'A NEW CHALLENGER APPROACHES!', icon: 'zap' });
+  const opponentQuote = FIGHTER_QUOTES[app.selectedPlayer.player2.id];
+  if (opponentQuote) {
+    createLog(app, { text: `${app.selectedPlayer.player2.name}: "${opponentQuote}"`, icon: 'sparkles' });
+  }
+  if (app.arcade && app.arcade.active) {
+    createLog(app, { text: `ARCADE STAGE ${app.arcade.stage + 1}/${app.arcade.totalStages}`, severity: 'log-round' });
+  }
 
   const playerStarts = Math.random() < 0.5;
   if (playerStarts) {

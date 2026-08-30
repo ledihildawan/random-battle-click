@@ -43,7 +43,7 @@ export default {
           </div>
           <div class="summary-row">
             <span class="summary-item"><span class="summary-label">TOOK</span> <span class="summary-value">{{ summary.damageTaken }}</span></span>
-            <span class="summary-item"><span class="summary-label">MED</span> <span class="summary-value">{{ summary.medkitsUsed }}/3</span></span>
+            <span class="summary-item"><span class="summary-label">MED</span> <span class="summary-value">{{ medkitsUsed }}/3</span></span>
           </div>
         </div>
         <div class="winner-menu-wrap">
@@ -85,6 +85,7 @@ export default {
             </button>
           </div>
         </div>
+        <p v-if="summary.damageDealt > 0" class="battle-tip"><pixel-icon name="sparkles" :size="10"></pixel-icon> {{ battleTip }}</p>
       </div>
       <div class="splash-crt"></div>
     </div>
@@ -103,8 +104,9 @@ export default {
     roundScore: { type: String, default: '' },
     summary: {
       type: Object,
-      default: () => ({ damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0, medkitsUsed: 0 }),
+      default: () => ({ damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 }),
     },
+    medkitsUsed: { type: Number, default: 0 },
     wins: { type: Number, default: 0 },
     losses: { type: Number, default: 0 },
     index: { type: Number, default: 0 },
@@ -194,6 +196,13 @@ export default {
     accuracy() {
       if (!this.summary.hitsAttempted) return 0;
       return Math.round((this.summary.hitsLanded / this.summary.hitsAttempted) * 100);
+    },
+    battleTip() {
+      if (this.victory && this.hpLeft <= 20) return 'Cutting it close — a well-timed Defend could save you next time.';
+      if (!this.victory && this.accuracy < 60) return 'Tip: Specials miss 25% — save them for lethal range or pity hits.';
+      if (this.medkitsUsed >= 3) return 'Tip: Medkits get riskier with each use — the third one fails 30% of the time.';
+      if (this.maxCombo >= 3) return `Nice combo! x${this.maxCombo} boosted your damage by ${this.maxCombo >= 5 ? '20%' : '10%'}.`;
+      return 'Tip: Build combo x3+ for bonus damage, or Defend when the CPU meter is full.';
     },
     subtitle() {
       if (this.victory) {

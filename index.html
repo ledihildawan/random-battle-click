@@ -44,7 +44,10 @@
           :streak="stats.streak"
           :best-streak="stats.bestStreak"
           :players="players"
+          :difficulty="difficulty"
           @start="goToSelectScreen"
+          @arcade="startArcade"
+          @cycle-difficulty="cycleDifficulty"
         ></title-screen>
 
         <select-screen
@@ -171,6 +174,7 @@
             :streak="stats.streak"
             :round-score="roundsPerMatch > 1 ? roundWins.player1 + '-' + roundWins.player2 : ''"
             :summary="battleSummary"
+            :medkits-used="tracker.playerHeal"
             :wins="stats.win.player1"
             :losses="stats.win.player2"
             :index="battleMenuIndex"

@@ -16,6 +16,12 @@ const STATS_KEY = 'rbc-stats-v1';
 
 const BATTLE_ACTION_KEYS = Object.freeze({ z: 0, x: 1, c: 2, v: 3 });
 
+const DIFFICULTY_PRESETS = Object.freeze({
+  easy: { label: 'EASY', defendMult: 0.4, healMult: 0.6, finisherMult: 0.6, comboRead: false, guardRead: false },
+  normal: { label: 'NORMAL', defendMult: 1.0, healMult: 1.0, finisherMult: 1.0, comboRead: true, guardRead: true },
+  hard: { label: 'HARD', defendMult: 1.3, healMult: 1.2, finisherMult: 1.0, comboRead: true, guardRead: true, bankMeter: true },
+});
+
 /**
  * Persistence edge (Imperative Shell): localStorage reads/writes return
  * an explicit Result value instead of throwing; corrupt shapes fall back
@@ -138,6 +144,8 @@ const app = new Vue({
       battleMaxCombo: 0,
       battleSummary: { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 },
       roundsPerMatch: 1,
+      difficulty: 'normal',
+      arcade: { active: false, stage: 0, totalStages: 5, ladder: [], hpCarry: 100 },
       roundWins: { player1: 0, player2: 0 },
       currentRound: 1,
       roundIntro: false,
@@ -174,8 +182,10 @@ const app = new Vue({
     'status.winner'(val) {
       if (!val) {
         UIEffects.clearWeather();
+        Sound.stopBattleMusic();
         return;
       }
+      Sound.stopBattleMusic();
       // K.O. beat before the winner screen (white flag surrender skips it)
       if (this.isSurrender) return;
       this.koActive = true;
@@ -232,15 +242,16 @@ const app = new Vue({
       const saved = result.value;
       if (saved && saved.stats && saved.stats.win) this.stats = { ...this.stats, ...saved.stats };
       if (saved && saved.fighterStats) this.fighterStats = sanitizeFighterStats(saved.fighterStats);
-      if (saved && saved.settings && [1, 3, 5].includes(saved.settings.rounds)) {
-        this.roundsPerMatch = saved.settings.rounds;
-      }
+        if (saved && saved.settings) {
+          if ([1, 3, 5].includes(saved.settings.rounds)) this.roundsPerMatch = saved.settings.rounds;
+          if (['easy', 'normal', 'hard'].includes(saved.settings.difficulty)) this.difficulty = saved.settings.difficulty;
+        }
     },
     saveStats() {
       writePersistedStats({
         stats: this.stats,
         fighterStats: this.fighterStats,
-        settings: { rounds: this.roundsPerMatch },
+        settings: { rounds: this.roundsPerMatch, difficulty: this.difficulty },
       });
     },
     cycleRounds() {
@@ -255,6 +266,58 @@ const app = new Vue({
       const pick = pool[Math.floor(Math.random() * pool.length)];
       Sound.play('select');
       this.clickSelectPlayer(pick, this.players.indexOf(pick));
+    },
+    cycleDifficulty() {
+      const options = ['easy', 'normal', 'hard'];
+      const idx = options.indexOf(this.difficulty);
+      this.difficulty = options[(idx + 1) % options.length];
+      Sound.play('tick');
+      this.saveStats();
+    },
+    startArcade() {
+      if (this.isTitleScreen) {
+        Sound.play('select');
+        const pool = this.players.filter((p) => !p.isSecret);
+        const fighter = pool[Math.floor(Math.random() * pool.length)];
+        const ladder = pool
+          .filter((p) => p.id !== fighter.id)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+        this.selectedPlayer.player1 = { ...fighter, isChampion: false };
+        this.arcade = { active: true, stage: 0, totalStages: ladder.length, ladder, hpCarry: 100 };
+        this.status.selecting = false;
+        this.status.play = false;
+        this.status.winner = false;
+        this.startArcadeStage();
+      }
+    },
+    startArcadeStage() {
+      const opponent = this.arcade.ladder[this.arcade.stage];
+      if (!opponent) {
+        this.endArcade(true);
+        return;
+      }
+      Sound.play('select');
+      this.startLoading();
+    },
+    advanceArcadeStage() {
+      this.arcade.stage += 1;
+      const healAmount = 25;
+      this.arcade.hpCarry = Math.min(100, this.arcade.hpCarry + healAmount);
+      if (this.arcade.stage >= this.arcade.totalStages) {
+        this.endArcade(true);
+      } else {
+        Sound.play('victory');
+        this.startArcadeStage();
+      }
+    },
+    endArcade(cleared) {
+      this.arcade.active = false;
+      if (cleared) {
+        Sound.play('victory');
+        this.createLog('ARCADE CLEAR! You conquered all challengers!', 'log-victory', 'trophy');
+      }
+      this.backToTitle();
     },
     // === KEYBOARD CONTROLLER ===
     handleKeydown(e) {
@@ -275,6 +338,8 @@ const app = new Vue({
         if (bufferString === codeString) this.activateCheat();
 
         if (e.key === 'Enter') this.goToSelectScreen();
+        if (key === 'a') this.startArcade();
+        if (key === 'd') this.cycleDifficulty();
         return;
       }
 
@@ -510,6 +575,10 @@ const app = new Vue({
       this.roundIntro = false;
       this.battleAssembling = true;
       BattleEngine.startNewBattle(this, rematch);
+      if (this.arcade.active && this.arcade.hpCarry < 100) {
+        this.health.player1 = this.arcade.hpCarry;
+      }
+      Sound.startBattleMusic();
       this.playBattleIntro();
     },
 
