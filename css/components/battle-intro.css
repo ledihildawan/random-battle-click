@@ -198,42 +198,28 @@
   }
 }
 
-/* --- Turn indicator: quiet chip, fades in place (no full-screen sweep) --- */
-.turn-banner {
-  position: fixed;
-  top: 88px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 600;
-  font-size: 9px;
+/* Persistent turn indicator — replaces the disappearing toast */
+.turn-indicator {
+  font-size: 8px;
   letter-spacing: 2px;
-  text-transform: uppercase;
-  padding: 6px 14px;
-  background: var(--bg-color);
-  box-shadow: 3px 3px 0 var(--shadow);
-  pointer-events: none;
-  animation: banner-soft 0.9s ease-out both;
+  padding: 4px 12px;
+  font-weight: bold;
+  box-shadow: 2px 2px 0 var(--shadow);
+  animation: turn-pulse 1.6s ease-in-out infinite alternate;
 }
-.turn-banner.is-you {
-  border: 3px solid var(--accent);
-  color: var(--accent);
+.turn-indicator.is-you {
+  background: var(--accent);
+  color: var(--white);
 }
-.turn-banner.is-enemy {
-  border: 3px solid var(--danger);
-  color: var(--danger);
+.turn-indicator.is-enemy {
+  background: var(--danger);
+  color: var(--white);
 }
-@keyframes banner-soft {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -6px);
+@keyframes turn-pulse {
+  from {
+    opacity: 0.8;
   }
-  15%,
-  70% {
+  to {
     opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, 0);
   }
 }

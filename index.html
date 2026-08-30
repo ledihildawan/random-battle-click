@@ -106,9 +106,6 @@
         </div>
 
         <div v-if="status.play || koActive" class="screen-battle" :class="{ 'is-intro': battleAssembling }">
-          <div v-if="turnBanner" :key="turnBanner.key" class="turn-banner" :class="'is-' + turnBanner.side">
-            {{ turnBanner.label }}
-          </div>
           <div class="players">
             <player-card
               side="p1"
@@ -140,6 +137,9 @@
                   class="round-pip is-cpu"
                   :class="{ 'is-won': n <= roundWins.player2, 'is-matchpoint': n === winsNeeded && roundWins.player2 === winsNeeded - 1 }"
                 ></span>
+              </div>
+              <div v-if="status.play && !status.winner" class="turn-indicator" :class="turnInProgress ? 'is-enemy' : 'is-you'">
+                {{ turnInProgress ? 'ENEMY' : 'YOU' }}
               </div>
             </div>
 

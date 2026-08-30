@@ -110,9 +110,7 @@ const app = new Vue({
       battleAssembling: false,
       koActive: false,
       koLoser: null,
-      cheatGlitch: false,
-      selectConfirm: null,
-      turnBanner: null,
+      roundIntro: false,
       globalShake: false,
       loadingProgress: 0,
       isDialogOpen: false,
@@ -242,9 +240,10 @@ const app = new Vue({
         this.advanceArcadeStage();
       }, 2200);
     },
-    turnInProgress(val) {
-      if (this.battleIntro || this.roundIntro || this.koActive || !this.status.play || this.status.winner) return;
-      this.showTurnBanner(val);
+    turnInProgress() {
+      // Turn indicator is now persistent (VS column) — no toast needed
+      if (!this.status.play || this.status.winner) return;
+      if (!this.turnInProgress) Sound.play('turnReady');
     },
   },
 
@@ -615,7 +614,6 @@ const app = new Vue({
       this.koActive = false;
       this.koLoser = null;
       this.roundIntro = false;
-      this.turnBanner = null;
       this.arcade.active = false;
       this.arcadeStageClear = false;
       this.arcadeSelecting = false;
@@ -624,7 +622,6 @@ const app = new Vue({
       clearTimeout(this._koTimer);
       clearTimeout(this._roundTimer);
       clearTimeout(this._arcadeTimer);
-      clearTimeout(this._bannerTimer);
       clearInterval(this._hpAnimInterval);
       this.cancelLoadingTimers();
       BattleEngine.cancelTurn(this);
@@ -658,14 +655,12 @@ const app = new Vue({
 
     playBattleIntro() {
       this.battleIntro = true;
-      this.turnBanner = null;
       clearTimeout(this._introTimer);
       clearTimeout(this._fightSoundTimer);
       this._fightSoundTimer = setTimeout(() => Sound.play('fight'), 1300);
       this._introTimer = setTimeout(() => {
         this.battleIntro = false;
         this.battleAssembling = false;
-        if (this.status.play && !this.status.winner && !this.turnInProgress) this.showTurnBanner(false);
       }, 2100);
     },
 
@@ -700,14 +695,6 @@ const app = new Vue({
           this._hpAnimInterval = null;
         }
       }, 50);
-    },
-
-    showTurnBanner(isEnemy) {
-      this.turnBanner = { key: Date.now(), label: isEnemy ? 'ENEMY TURN' : 'YOUR TURN', side: isEnemy ? 'enemy' : 'you' };
-      clearTimeout(this._bannerTimer);
-      this._bannerTimer = setTimeout(() => {
-        this.turnBanner = null;
-      }, 950);
     },
 
     reBattle() {
