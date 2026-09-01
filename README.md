@@ -1,4 +1,4 @@
-# Retro Battle: Console Edition
+# Retro Battle
 
 A retro arcade turn-based battler. Vanilla ES modules + Vue 2 (global build), zero
 bundler, zero npm dependencies — open `index.html` and play. Font is self-hosted;
@@ -36,14 +36,14 @@ works fully offline.
 
 ## Controls
 
-| Screen | Keys |
-|---|---|
-| Anywhere | `M` mute |
-| Title | `Enter` start, konami code |
-| Select | arrows navigate, `Enter` confirm, `R` cycles rounds, `Esc` back |
-| Battle | `Z`/`X`/`C`/`V` actions, `←→` menu, `Enter` execute, `Esc` give up |
-| Dialog | arrows/`Tab` switch, `Enter` confirm, `Esc` cancel |
-| Winner | arrows navigate, `Enter` execute, `R` rematch, `N` new match, `Esc` menu |
+| Screen   | Keys                                                                     |
+| -------- | ------------------------------------------------------------------------ |
+| Anywhere | `M` mute                                                                 |
+| Title    | `Enter` start, konami code                                               |
+| Select   | arrows navigate, `Enter` confirm, `R` cycles rounds, `Esc` back          |
+| Battle   | `Z`/`X`/`C`/`V` actions, `←→` menu, `Enter` execute, `Esc` give up       |
+| Dialog   | arrows/`Tab` switch, `Enter` confirm, `Esc` cancel                       |
+| Winner   | arrows navigate, `Enter` execute, `R` rematch, `N` new match, `Esc` menu |
 
 ## Architecture
 

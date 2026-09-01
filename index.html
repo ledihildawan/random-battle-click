@@ -1,13 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Retro Battle: Console Edition</title>
-    <meta name="description" content="Retro arcade turn-based battler — pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs." />
+    <title>Retro Battle</title>
+    <meta
+      name="description"
+      content="Retro arcade turn-based battler — pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs."
+    />
     <meta name="theme-color" content="#212529" />
-    <meta property="og:title" content="Retro Battle: Console Edition" />
-    <meta property="og:description" content="Pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs." />
+    <meta property="og:title" content="Retro Battle" />
+    <meta
+      property="og:description"
+      content="Pick a fighter, unleash signature specials, and outsmart the CPU. Pure pixel nostalgia, zero installs."
+    />
     <meta property="og:type" content="website" />
     <link
       rel="icon"
@@ -28,7 +34,9 @@
       <div id="snow-container" :class="{ 'is-hidden': status.winner }"></div>
 
       <transition name="fade">
-        <div v-if="cheatActivated" class="cheat-toast"><pixel-icon name="unlock" :size="12"></pixel-icon> God mode activated!</div>
+        <div v-if="cheatActivated" class="cheat-toast">
+          <pixel-icon name="unlock" :size="12"></pixel-icon> God mode activated!
+        </div>
       </transition>
 
       <div
@@ -88,21 +96,21 @@
 
         <div v-if="cheatGlitch" class="glitch-overlay" aria-hidden="true"></div>
 
-      <div v-if="arcade.active && arcadeScore > 0" class="arcade-score" aria-label="Arcade score">
-        <pixel-icon name="star" :size="10"></pixel-icon> {{ arcadeScore }}
-      </div>
-
-      <div v-if="arcadeContinue" class="continue-overlay" role="dialog" aria-label="Continue">
-        <div class="continue-content">
-          <p class="continue-title">CONTINUE?</p>
-          <p class="continue-count">{{ arcadeContinueCount }}</p>
-          <p class="continue-hint">[ENTER] retry stage · -500 pts · [ESC] end run</p>
+        <div v-if="arcade.active && arcadeScore > 0" class="arcade-score" aria-label="Arcade score">
+          <pixel-icon name="star" :size="10"></pixel-icon> {{ arcadeScore }}
         </div>
-      </div>
 
-      <div v-if="koActive" class="ko-overlay" aria-hidden="true"><span class="ko-text">K.O.</span></div>
+        <div v-if="arcadeContinue" class="continue-overlay" role="dialog" aria-label="Continue">
+          <div class="continue-content">
+            <p class="continue-title">CONTINUE?</p>
+            <p class="continue-count">{{ arcadeContinueCount }}</p>
+            <p class="continue-hint">[ENTER] retry stage · -500 pts · [ESC] end run</p>
+          </div>
+        </div>
 
-      <div v-if="battleIntro" class="battle-cinema" aria-hidden="true">
+        <div v-if="koActive" class="ko-overlay" aria-hidden="true"><span class="ko-text">K.O.</span></div>
+
+        <div v-if="battleIntro" class="battle-cinema" aria-hidden="true">
           <div class="intro-letterbox intro-letterbox--top"></div>
           <div class="intro-letterbox intro-letterbox--bottom"></div>
           <div class="intro-fight">{{ battleIntroText }}</div>
@@ -141,7 +149,11 @@
                   :class="{ 'is-won': n <= roundWins.player2, 'is-matchpoint': n === winsNeeded && roundWins.player2 === winsNeeded - 1 }"
                 ></span>
               </div>
-              <div v-if="status.play && !status.winner" class="turn-indicator" :class="turnInProgress ? 'is-enemy' : 'is-you'">
+              <div
+                v-if="status.play && !status.winner"
+                class="turn-indicator"
+                :class="turnInProgress ? 'is-enemy' : 'is-you'"
+              >
                 {{ turnInProgress ? 'ENEMY' : 'YOU' }}
               </div>
             </div>
@@ -233,7 +245,7 @@
     </div>
 
     <noscript>
-      <div style="font-family: monospace; color: #ffffff; background: #212529; padding: 24px; text-align: center;">
+      <div style="font-family: monospace; color: #ffffff; background: #212529; padding: 24px; text-align: center">
         JavaScript is required to play Retro Battle.
       </div>
     </noscript>
@@ -242,7 +254,7 @@
     <script src="./js/vue.js"></script>
     <script type="module" src="./js/script.js"></script>
     <script>
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function() {});
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
     </script>
   </body>
 </html>

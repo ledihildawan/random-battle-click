@@ -1,5 +1,5 @@
 {
-  "name": "Retro Battle: Console Edition",
+  "name": "Retro Battle",
   "short_name": "Retro Battle",
   "description": "Retro arcade turn-based battler with signature specials, combo system, and arcade mode",
   "start_url": "./index.html",

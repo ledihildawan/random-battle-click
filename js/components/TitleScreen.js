@@ -39,7 +39,7 @@ export default {
       </transition>
 
       <div class="title-footer">
-        v6.0 Console Edition<br />
+        v6.0<br />
         SECRET CODE: ↑ ↑ ↓ ↓ ← → ← → B A
       </div>
     </div>

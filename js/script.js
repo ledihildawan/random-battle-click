@@ -1,17 +1,18 @@
+import BrandLogo from './components/BrandLogo.js';
 import CommandCenter from './components/CommandCenter.js';
 import GiveUpDialog from './components/GiveUpDialog.js';
 import LogsTerminal from './components/LogsTerminal.js';
-import BrandLogo from './components/BrandLogo.js';
 import PixelIcon from './components/PixelIcon.js';
 import PlayerCard from './components/PlayerCard.js';
 import SelectScreen from './components/SelectScreen.js';
 import SplashScreen from './components/SplashScreen.js';
+import StatsScreen from './components/StatsScreen.js';
 import TitleScreen from './components/TitleScreen.js';
 import WinnerScreen from './components/WinnerScreen.js';
-import StatsScreen from './components/StatsScreen.js';
 import BattleEngine, { BALANCE } from './services/battleEngine.js';
-import UIEffects from './services/uiEffects.js';
+import { createBattleRuntimeState, resetBattleRuntimeState } from './services/battleState.js';
 import Sound from './services/soundEngine.js';
+import UIEffects from './services/uiEffects.js';
 
 const STATS_KEY = 'rbc-stats-v1';
 
@@ -20,7 +21,15 @@ const BATTLE_ACTION_KEYS = Object.freeze({ z: 0, x: 1, c: 2, v: 3 });
 const DIFFICULTY_PRESETS = Object.freeze({
   easy: { label: 'EASY', defendMult: 0.4, healMult: 0.6, finisherMult: 0.6, comboRead: false, guardRead: false },
   normal: { label: 'NORMAL', defendMult: 1.0, healMult: 1.0, finisherMult: 1.0, comboRead: true, guardRead: true },
-  hard: { label: 'HARD', defendMult: 1.3, healMult: 1.2, finisherMult: 1.0, comboRead: true, guardRead: true, bankMeter: true },
+  hard: {
+    label: 'HARD',
+    defendMult: 1.3,
+    healMult: 1.2,
+    finisherMult: 1.0,
+    comboRead: true,
+    guardRead: true,
+    bankMeter: true,
+  },
 });
 
 const ACHIEVEMENTS = Object.freeze([
@@ -93,16 +102,70 @@ const app = new Vue({
   data() {
     return {
       players: [
-        { id: 1, name: 'Spencer Horton', avatar: 'player-1.jpg', isChampion: false, lore: 'A retired duelist who never stopped practicing.' },
-        { id: 2, name: 'Glen Rouse', avatar: 'player-2.jpg', isChampion: false, lore: 'A prospector who fights with the weight of his fortune.' },
-        { id: 3, name: 'Phoenix Walker', avatar: 'player-3.jpg', isChampion: false, lore: 'Rises from every defeat hotter than before.' },
+        {
+          id: 1,
+          name: 'Spencer Horton',
+          avatar: 'player-1.jpg',
+          isChampion: false,
+          lore: 'A retired duelist who never stopped practicing.',
+        },
+        {
+          id: 2,
+          name: 'Glen Rouse',
+          avatar: 'player-2.jpg',
+          isChampion: false,
+          lore: 'A prospector who fights with the weight of his fortune.',
+        },
+        {
+          id: 3,
+          name: 'Phoenix Walker',
+          avatar: 'player-3.jpg',
+          isChampion: false,
+          lore: 'Rises from every defeat hotter than before.',
+        },
         { id: 4, name: 'Judy Sewell', avatar: 'player-4.jpg', isChampion: false, lore: 'Loves hard, fights harder.' },
-        { id: 5, name: 'Victor Hansen', avatar: 'player-5.jpg', isChampion: false, lore: 'Delivers judgment with a million volts.' },
-        { id: 6, name: 'Alisa Hester', avatar: 'player-6.jpg', isChampion: false, lore: 'Cultivates toxins that bloom in silence.' },
-        { id: 7, name: 'Kelis Ford', avatar: 'player-7.jpg', isChampion: false, lore: 'Moves faster than the wind can follow.' },
-        { id: 8, name: 'Rene Wells', avatar: 'player-8.jpg', isChampion: false, lore: 'Wishes upon stars, then knocks them down.' },
-        { id: 9, name: 'Calla Wang', avatar: 'player-9.jpg', isChampion: false, lore: 'Cold precision sharpened to a razor\u2019s patience.' },
-        { id: 10, name: 'Dorian Cordova', avatar: 'player-10.jpg', isChampion: false, lore: 'Every step leaves a crater.' },
+        {
+          id: 5,
+          name: 'Victor Hansen',
+          avatar: 'player-5.jpg',
+          isChampion: false,
+          lore: 'Delivers judgment with a million volts.',
+        },
+        {
+          id: 6,
+          name: 'Alisa Hester',
+          avatar: 'player-6.jpg',
+          isChampion: false,
+          lore: 'Cultivates toxins that bloom in silence.',
+        },
+        {
+          id: 7,
+          name: 'Kelis Ford',
+          avatar: 'player-7.jpg',
+          isChampion: false,
+          lore: 'Moves faster than the wind can follow.',
+        },
+        {
+          id: 8,
+          name: 'Rene Wells',
+          avatar: 'player-8.jpg',
+          isChampion: false,
+          lore: 'Wishes upon stars, then knocks them down.',
+        },
+        {
+          id: 9,
+          name: 'Calla Wang',
+          avatar: 'player-9.jpg',
+          isChampion: false,
+          lore: 'Cold precision sharpened to a razor\u2019s patience.',
+        },
+        {
+          id: 10,
+          name: 'Dorian Cordova',
+          avatar: 'player-10.jpg',
+          isChampion: false,
+          lore: 'Every step leaves a crater.',
+        },
       ],
       selectedPlayer: { player1: {}, player2: {} },
       health: { player1: 100, player2: 100 },
@@ -158,7 +221,14 @@ const app = new Vue({
       surrenderHp: 0,
       surrenderEnemyHp: 0,
       roundCount: 0,
-      stats: { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 }, achievements: [] },
+      stats: {
+        win: { player1: 0, player2: 0 },
+        streak: 0,
+        bestStreak: 0,
+        maxCombo: 0,
+        arcade: { highScore: 0, bestStage: 0, clears: 0 },
+        achievements: [],
+      },
       battleMaxCombo: 0,
       battleSummary: { damageDealt: 0, damageTaken: 0, biggestHit: 0, hitsLanded: 0, hitsAttempted: 0 },
       roundsPerMatch: 1,
@@ -192,7 +262,12 @@ const app = new Vue({
   computed: {
     isTitleScreen() {
       return (
-        !this.showSplash && !this.viewingStats && !this.status.selecting && !this.status.loading && !this.status.play && !this.status.winner
+        !this.showSplash &&
+        !this.viewingStats &&
+        !this.status.selecting &&
+        !this.status.loading &&
+        !this.status.play &&
+        !this.status.winner
       );
     },
     isVictory() {
@@ -299,10 +374,10 @@ const app = new Vue({
       const saved = result.value;
       if (saved && saved.stats && saved.stats.win) this.stats = { ...this.stats, ...saved.stats };
       if (saved && saved.fighterStats) this.fighterStats = sanitizeFighterStats(saved.fighterStats);
-        if (saved && saved.settings) {
-          if ([1, 3, 5].includes(saved.settings.rounds)) this.roundsPerMatch = saved.settings.rounds;
-          if (['easy', 'normal', 'hard'].includes(saved.settings.difficulty)) this.difficulty = saved.settings.difficulty;
-        }
+      if (saved && saved.settings) {
+        if ([1, 3, 5].includes(saved.settings.rounds)) this.roundsPerMatch = saved.settings.rounds;
+        if (['easy', 'normal', 'hard'].includes(saved.settings.difficulty)) this.difficulty = saved.settings.difficulty;
+      }
     },
     saveStats() {
       writePersistedStats({
@@ -524,7 +599,8 @@ const app = new Vue({
             else if (this.battleMenuIndex === 1) this.goToSelectScreen();
             else this.backToTitle();
           } else {
-            if (this.battleMenuIndex === 0) this.goToSelectScreen(); // New Match
+            if (this.battleMenuIndex === 0)
+              this.goToSelectScreen(); // New Match
             else this.backToTitle(); // Back to Menu
           }
         }
@@ -600,8 +676,28 @@ const app = new Vue({
       BattleEngine.executeBattleAction(this);
     },
 
+    resetBattleRuntimeState({ resetStatus = false } = {}) {
+      BattleEngine.cancelTurn(this);
+      clearTimeout(this._koTimer);
+      clearTimeout(this._roundTimer);
+      clearTimeout(this._arcadeTimer);
+      clearTimeout(this._introTimer);
+      clearTimeout(this._fightSoundTimer);
+      clearInterval(this._hpAnimInterval);
+      UIEffects.clearWeather();
+
+      Object.assign(this, createBattleRuntimeState({
+        limit: { heal: BALANCE.heal.charges },
+      }));
+
+      if (resetStatus) {
+        this.status = { ...this.status, selecting: false, loading: false, play: false, winner: false };
+      }
+    },
+
     goToSelectScreen() {
       Sound.play('select');
+      this.resetBattleRuntimeState();
       this.status.selecting = true;
       this.status.play = false;
       this.status.winner = false;
@@ -641,7 +737,14 @@ const app = new Vue({
     },
 
     resetAllStats() {
-      this.stats = { win: { player1: 0, player2: 0 }, streak: 0, bestStreak: 0, maxCombo: 0, arcade: { highScore: 0, bestStage: 0, clears: 0 }, achievements: [] };
+      this.stats = {
+        win: { player1: 0, player2: 0 },
+        streak: 0,
+        bestStreak: 0,
+        maxCombo: 0,
+        arcade: { highScore: 0, bestStage: 0, clears: 0 },
+        achievements: [],
+      };
       this.fighterStats = {};
       this.saveStats();
       Sound.play('back');
@@ -657,7 +760,8 @@ const app = new Vue({
       if (s.win.player1 >= 1 && !unlocked.has('first-blood')) newlyUnlocked.push('first-blood');
       if (s.win.player1 >= 5 && !unlocked.has('getting-good')) newlyUnlocked.push('getting-good');
       if (s.win.player1 >= 20 && !unlocked.has('champion')) newlyUnlocked.push('champion');
-      if (this.roundWins.player2 === 0 && this.roundsPerMatch > 1 && !unlocked.has('perfect')) newlyUnlocked.push('perfect');
+      if (this.roundWins.player2 === 0 && this.roundsPerMatch > 1 && !unlocked.has('perfect'))
+        newlyUnlocked.push('perfect');
       if (this.health.player1 >= 100 && !unlocked.has('untouchable')) newlyUnlocked.push('untouchable');
       if (this.roundCount < 5 && !unlocked.has('speedrun')) newlyUnlocked.push('speedrun');
       if (this.battleMaxCombo >= 5 && !unlocked.has('combo-master')) newlyUnlocked.push('combo-master');
@@ -684,27 +788,15 @@ const app = new Vue({
     backToTitle() {
       Sound.play('back');
       Sound.stopBattleMusic();
-      this.battleIntro = false;
-      this.battleAssembling = false;
-      this.koActive = false;
-      this.koLoser = null;
-      this.roundIntro = false;
       this.arcade.active = false;
       this.arcadeStageClear = false;
       this.arcadeSelecting = false;
-      clearTimeout(this._introTimer);
-      clearTimeout(this._fightSoundTimer);
-      clearTimeout(this._koTimer);
-      clearTimeout(this._roundTimer);
-      clearTimeout(this._arcadeTimer);
-      clearInterval(this._hpAnimInterval);
       this.cancelLoadingTimers();
-      BattleEngine.cancelTurn(this);
+      resetBattleRuntimeState(this, { resetStatus: true });
       this.status.selecting = false;
       this.status.play = false;
       this.status.winner = false;
       this.status.loading = false;
-      this.battleMenuIndex = 0;
     },
 
     startLoading(rematch = false) {
@@ -740,6 +832,7 @@ const app = new Vue({
     },
 
     startNewBattle(rematch = false) {
+      this.resetBattleRuntimeState();
       this.roundIntro = false;
       this.battleAssembling = true;
       BattleEngine.startNewBattle(this, rematch);
